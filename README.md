@@ -1,1 +1,1 @@
-# Supermarket-Management-System :smile:
+# Supermarket-Management-System 
