@@ -1,5 +1,5 @@
 0) auth and sessions
-1) ERD
+1) ERD ------------------
 2) setup database with few tables,
 ////after creating the employee table then add the id and role to the req.user object and req.session.user obj!!!
 2) login page
@@ -7,3 +7,9 @@
 4)manager pages !!!
 5) billing section pages,
 6) inventory pages
+
+
+//////////////////////////////////
+include admin details in the employee (so all the employee details may be null ??) and even the login details for the admin!
+inventory people will get the order received option according to the one who clicked palce order!!! that is
+if a clicks place order for 1   and 2 then in order recived list of b must not have 1 and 2 for recived order option//
