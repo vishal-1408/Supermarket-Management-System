@@ -31,25 +31,25 @@ con.connect((err)=>{
 
 
 
-///////////////////////////////////////////////get routes
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////get routes
 app.get("/",(req,res)=>{
-   res.send('unlocked');
+   res.render("landing");
 });
-
-app.get("/register",(req,res)=>{
-  res.render("register");
-
-});
+//
+// app.get("/register",(req,res)=>{
+//   res.render("register");
+//
+// });
 
 app.get("/login",(req,res)=>{
     res.render("login");
   });
 
 
-
-app.get("/secret",isAuthenticated,(req,res)=>{
-  res.send("secret!!wihieee");
-})
+//
+// app.get("/secret",isAuthenticated,(req,res)=>{
+//   res.send("secret!!wihieee");
+// })
 
 
 app.get("/logout",(req,res)=>{
@@ -60,37 +60,60 @@ app.get("/logout",(req,res)=>{
   res.clearCookie("connect.sid");
   res.redirect("/login");
 });
+//////////////////////////////////////////////////////admin routes
+app.get("/admin",adminAuth,(req,res)=>{
+  res.render("adminIndex")
+})
+
+/////////////////////////////////////////////////////////manaager routes
 
 
-///////////////////////////////////////////////////post routes
-app.post("/register",(req,res)=>{
-  bcrypt.hash(req.body.user.password,10,(e,hash)=>{
-    con.query(`INSERT INTO LOGIN(username,password) VALUES('${req.body.user.username}','${hash}')`,req.body.user,(err,results)=>{
-      if(err) console.log(err);
-      else {
-        console.log(results,results.affectedRows);
-        req.session.user=req.body.user.username;
-        req.user=req.body.user.username;
-        res.redirect("/secret");
-      }
-    });
-  });
-});
+
+
+/////////////////////////////////////////////////////inventory routes
+
+
+
+
+///////////////////////////////////////////////////////billing routes
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////post routes
+// app.post("/register",(req,res)=>{
+//   bcrypt.hash(req.body.user.password,10,(e,hash)=>{
+//     con.query(`INSERT INTO LOGIN(username,password) VALUES('${req.body.user.username}','${hash}')`,req.body.user,(err,results)=>{
+//       if(err) console.log(err);
+//       else {
+//         console.log(results,results.affectedRows);
+//         req.session.user=req.body.user.username;
+//         req.user=req.body.user.username;
+//         res.redirect("/secret");
+//       }
+//     });
+//   });
+// });
 
 app.post("/login",(req,res)=>{
   con.query(`Select password from login where username='${req.body.username}'`,(err,results)=>{
     if(err) console.log(err);
     else{
-      console.log(results);
+    //``  console.log(results);
       if(results[0]){
         bcrypt.compare(req.body.password,results[0].password,(err,resp)=>{
           if(err) {
             console.log(err);
           }else {
             if(resp==true){
-            req.session.user=req.body.username;
-            req.user=req.body.username;
-            res.redirect("/secret");
+            con.query(`Select username,emp_id,d_name from (employee natural join login) natural join department  where username='${req.body.username}'`,(err,results)=>{
+              req.session.user={
+                username:  results[0].username,
+                empid:results[0].emp_id,
+                role:results[0].d_name
+              };
+            //  console.log(req.session.user);
+              res.redirect("/admin");
+            })
+
           }else{
             res.redirect("back");
           }
@@ -103,16 +126,27 @@ app.post("/login",(req,res)=>{
   })
 });
 
+//////////////////////////////////////////////////////admin routes
 
-/////////////////////////////////////////////////middlewares
-  function isAuthenticated(req,res,next){
-    console.log(req.session.user);
-    if(req.session.user){
-      next();
-    }else{
-      res.redirect("/login");
-    }
+
+/////////////////////////////////////////////////////////manaager routes
+
+
+
+
+/////////////////////////////////////////////////////inventory routes
+
+
+
+
+///////////////////////////////////////////////////////billing routes
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////middlewares
+  function adminAuth(req,res,next){
+    if(req.session.user!=undefined && req.session.user.role=="admin") next();
+    else  res.redirect("/login");
   }
+
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
 
 

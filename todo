@@ -13,3 +13,15 @@
 include admin details in the employee (so all the employee details may be null ??) and even the login details for the admin!
 inventory people will get the order received option according to the one who clicked palce order!!! that is
 if a clicks place order for 1   and 2 then in order recived list of b must not have 1 and 2 for recived order option//
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+1) role based webpage after login --- first do it for admin!!
+2)finish admin index page and pages for addign the employees
+3)role based for manager
+3) finish manager pages!!!
+4) billing rolebased
+5) billing pages
+6) inventory rolebased
+7) inventory pages
