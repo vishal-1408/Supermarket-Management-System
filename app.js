@@ -4,6 +4,8 @@ const mysql = require("mysql");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
+const upload = require("./utils/multer.js");  //even multer won't save the file as it is , it forms the binary file in the given dest same as formidable!!
+const excelfile = require('read-excel-file/node');  //takes the input of binary files only!!!!
 
 app.use(session({
   secret:"notthefinalsecretjustatrial",
@@ -64,6 +66,60 @@ app.get("/logout",(req,res)=>{
 app.get("/admin",adminAuth,(req,res)=>{
   res.render("adminIndex")
 })
+
+
+app.get("/admin/empdetails",(req,res)=>{
+  con.query("select * from employee",(e,result)=>{
+    if(e) console.log(e);
+    else{
+      // res.status(200).json({
+      //   result:result,
+      //   message:"hello"
+      // })
+      res.render("empdetails",{result:result});
+    }
+  })
+})
+
+app.post("/admin/addemployee",upload.single('excelfile'),async (req,res)=>{
+   await new Promise((resolve,reject)=>{
+     con.query("select * from department",(e,result)=>{
+          if(e) console.log(e);  
+          else{
+            let dept={};
+            for (x of result){
+              dept[x.d_name]=x.d_id;
+            }
+            resolve(dept);
+          }
+        })
+   })
+   .then((dept)=>{
+    excelfile("./uploads/"+req.file.filename)
+    .then(rows=>{
+      console.log(rows)
+      let array =[]
+      for (x in rows){
+        if(x!=0){
+          array[x-1]=[rows[x][0],rows[x][1],rows[x][2],rows[x][3],rows[x][4],rows[x][5],dept[rows[x][6]]];
+        }
+      }
+      con.query("insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values ?",[array],(e,result)=>{
+        if(e) console.log(e);
+        else{
+          console.log(result);
+          res.redirect("/admin");
+        }
+      })
+    })
+   })
+   .catch(e=>{
+     console.log(e);
+   })
+});
+
+
+
 
 /////////////////////////////////////////////////////////manaager routes
 

@@ -55,7 +55,7 @@
   <div class="row">
     <div class="form-group col-md-12">
       <label for="address">address:</label>
-      <input type="text" name="address" id="address" class="form-control">
+      <input type="text" name="address" id="address" class="form-control" >
     </div>
   </div>
   <div class="text-center">
@@ -65,6 +65,14 @@
   </div>
 
   </form>
+<hr>
+<form action="/admin/addemployee" method="post" enctype="multipart/form-data">
+   <div class="form-group">
+     <input type="file" id="file" class="form-control" name="excelfile">
+    <label for="file">File Upload</label>
+  </div>
+  <div class="text-center"><button class="btn btn-outline-danger">Submit</button></div>
+</form>
 </div>
 
 
