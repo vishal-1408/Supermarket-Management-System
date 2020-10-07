@@ -2,14 +2,14 @@
 1) ERD ------------------
 2) setup database with few tables,
 ////after creating the employee table then add the id and role to the req.user object and req.session.user obj!!!
-2) login page
-3) admin index page and add employees page.
-4)manager pages !!!
-5) billing section pages,
-6) inventory pages
+1) login page
+2) admin index page and add employees page.
+3) employee details page with modify, view,delete , add credentials etc (for now modify,view, add credentials takes u to different routes!!!)
+4) figure out a way to display the passwords toooo!!!
 
 
-//////////////////////////////////
+///////////////
+///////////////////
 include admin details in the employee (so all the employee details may be null ??) and even the login details for the admin!
 inventory people will get the order received option according to the one who clicked palce order!!! that is
 if a clicks place order for 1   and 2 then in order recived list of b must not have 1 and 2 for recived order option//

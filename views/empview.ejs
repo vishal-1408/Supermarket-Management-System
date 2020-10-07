@@ -23,23 +23,41 @@
   
   <div class="text-center my-5"><h1>EMPLOYEE DETAILS</h1></div>
   <div class="container my-5">
-    <%for(x in result){%>
-      <div class="row">
-        <div class="col-md-4"><%=x%> ) <h5 class="d-inline-block"><%=result[x].emp_name%></h5></div>
-        <div class="col-md-2">
-          <a href="/admin/empdetails/<%=result[x].emp_id%>/view">VIEW</a>
+    <div class="row">
+        <div class="col-md-6"><h5>Name :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_name%></h5></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6"><h5>age :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_age%></h5></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6"><h5>gender :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_gender%></h5></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6"><h5>salary :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_salary%></h5></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6"><h5>address :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_address%></h5></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6"><h5>mobile no :</h5></div>
+        <div class="col-md-6"><h5><%=result[0].emp_mobileno%></h5></div>
+    </div>
+
+    <%if(result[0].username){%>
+        <div class="row">
+            <div class="col-md-6"><h5>username :</h5></div>
+            <div class="col-md-6"><h5><%=result[0].username%></h5></div>
         </div>
-        <div class="col-md-2">
-          <a href="/admin/empdetails/<%=result[x].emp_id%>/modify">MODIFY</a>
-        </div>
-        <div class="col-md-2">
-          <a href="/admin/empdetails/<%=result[x].emp_id%>/addcreds">ADD CREDS</a>
-        </div>
-        <div class="col-md-2">  
-          <form action="/admin/empdetails/<%=result[x].emp_id%>/delete?_method=delete" method="post">
-           <button>DELETE</button>
-          </form>
-        </div>  
+    <%}%>
+    <%if(result[0].password){%>
+        <div class="row">
+            <div class="col-md-6"><h5>password :</h5></div>
+            <div class="col-md-6"><h5><%=result[0].password%></h5></div>
         </div>
     <%}%>
   </div>
