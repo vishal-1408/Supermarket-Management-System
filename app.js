@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 const session = require("express-session");
 const upload = require("./utils/multer.js");  //even multer won't save the file as it is , it forms the binary file in the given dest same as formidable!!
 const excelfile = require('read-excel-file/node');  //takes the input of binary files only!!!!
-
+const fs=require("fs");
 app.use(session({
   secret:"notthefinalsecretjustatrial",
   resave:false,
@@ -81,7 +81,35 @@ app.get("/admin/empdetails",(req,res)=>{
   })
 })
 
-app.post("/admin/addemployee",upload.single('excelfile'),async (req,res)=>{
+
+app.post("/admin/addemp/single",async (req,res)=>{
+  await new Promise((resolve,reject)=>{
+    con.query("select * from department",(e,result)=>{
+         if(e) console.log(e);  
+         else{
+           let dept={};
+           for (x of result){
+             dept[x.d_name]=x.d_id;
+           }
+           resolve(dept);
+         }
+       })
+  })
+  .then((dept)=>{
+     con.query(`insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values('${req.body.name}','${req.body.age}','${req.body.gender}','${req.body.salary}','${req.body.address}','${req.body.mobileno}','${dept[req.body.dept]}')`,(e,result)=>{
+       if(e) console.log(e);
+       else{
+         console.log(result);
+         res.redirect("/admin");
+       }
+     })
+   })
+  .catch(e=>{
+    console.log(e);
+  })
+});
+
+app.post("/admin/addemp/multiple",upload.single('excelfile'),async (req,res)=>{
    await new Promise((resolve,reject)=>{
      con.query("select * from department",(e,result)=>{
           if(e) console.log(e);  
@@ -109,6 +137,9 @@ app.post("/admin/addemployee",upload.single('excelfile'),async (req,res)=>{
         else{
           console.log(result);
           res.redirect("/admin");
+          fs.unlink("./uploads/"+req.file.filename,(e)=>{
+            if(e) console.log(e);
+          });
         }
       })
     })
