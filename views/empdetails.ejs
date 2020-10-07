@@ -1,5 +1,26 @@
 <%- include("partials/header.ejs") %>
-
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Navbar</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-link" href="/admin">Home <span class="sr-only">(current)</span></a>
+        <a class="nav-link" href="/admin/transactions">Transactions</a>
+        <a class="nav-link" href="/admin/purchaseorder">Purchase  Details</a>
+        <a class="nav-link  active" href="/admin/empdetails">Employee Details</a>
+        <a class="nav-link" href="/admin/stats">Statistics</a>
+        <a class="nav-link" href="/admin/supplier">Supplier Details</a>
+        <a class="nav-link" href="/admin/customer">Customer Details</a>
+        <a class="nav-link" href="/admin/customer">Product Details</a>
+      </div>
+      <div class="navbar-nav">
+        <a class="nav-link" href="/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+  
 <%=result%>
 
 <%- include("partials/footer.ejs") %>

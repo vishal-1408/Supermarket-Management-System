@@ -9,7 +9,7 @@
       <a class="nav-link active" href="/admin">Home <span class="sr-only">(current)</span></a>
       <a class="nav-link" href="/admin/transactions">Transactions</a>
       <a class="nav-link" href="/admin/purchaseorder">Purchase  Details</a>
-      <a class="nav-link" href="/admin/employeedetails">Employee Details</a>
+      <a class="nav-link" href="/admin/empdetails">Employee Details</a>
       <a class="nav-link" href="/admin/stats">Statistics</a>
       <a class="nav-link" href="/admin/supplier">Supplier Details</a>
       <a class="nav-link" href="/admin/customer">Customer Details</a>
@@ -25,7 +25,7 @@
 <div class="container">
   <h1 class="text-center my-4">ADD EMPLOYEE</h1>
   <hr>
-  <form action="/admin" method="post">
+  <form action="/admin/addemp/single" method="post">
   <div class="container">
     <div class="row">
       <div class="form-group col-md-6">
@@ -39,17 +39,45 @@
     </div>
     <div class="row">
       <div class="form-group col-md-6">
-        <label for="exampleInputEmail1">Gender:</label>
-        <div class="container">
-          <label for="male">Male: </label>
-          <input type="radio" name="gender" value="m" id="male">
-          <label for="female">Female: </label>
-          <input type="radio" name="gender" value="f" id="female">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="gender">Gender</label>
+          </div>
+          <select class="custom-select" id="gender" name="gender">
+            <option selected>Choose...</option>
+            <option value="M">Male</option>
+            <option value="F">Two</option>
+            <option value="N">Prefer not to say</option>
+          </select>
         </div>
       </div>
       <div class="form-group col-md-6">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="department">Department</label>
+          </div>
+          <select class="custom-select" id="department" name="dept">
+            <option selected>Choose...</option>
+            <!-- <option value="admin">Admin</option> -->
+            <option value="billing">Billing</option>
+            <option value="inventory">Inventory</option>
+            <option value="managing">Managing</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="helper">Helper</option>
+            <option value="security">Security</option>
+          </select>
+        </div>
+      
+    </div>
+    </div>
+    <div class="row">
+      <div class="form-group col-md-6">
         <label for="age">Age</label>
         <input type="number" class="form-control" id="age" name="age">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="age">Salary</label>
+        <input type="number" class="form-control" id="salary" name="salary">
       </div>
     </div>
   <div class="row">
@@ -65,8 +93,11 @@
   </div>
 
   </form>
-<hr>
-<form action="/admin/addemployee" method="post" enctype="multipart/form-data">
+  </div>
+<hr CLASS="my-5">
+<div class="container my-5">
+  <h1 class="my-5 text-center">ADD EMPLOYEES THROUGH EXCEL SHEET</h1>
+<form action="/admin/addemp/multiple" method="post" enctype="multipart/form-data">
    <div class="form-group">
      <input type="file" id="file" class="form-control" name="excelfile">
     <label for="file">File Upload</label>
