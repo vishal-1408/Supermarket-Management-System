@@ -25,16 +25,22 @@
   <div class="container my-5">
     <%for(x in result){%>
       <div class="row">
-        <div class="col-md-4"><%=x%> ) <h5 class="d-inline-block"><%=result[x].emp_name%></h5></div>
+        <div class="col-md-4"><%=Number(x)+1%> ) <h5 class="d-inline-block"><%=result[x].emp_name%></h5></div>
         <div class="col-md-2">
           <a href="/admin/empdetails/<%=result[x].emp_id%>/view">VIEW</a>
         </div>
         <div class="col-md-2">
           <a href="/admin/empdetails/<%=result[x].emp_id%>/modify">MODIFY</a>
         </div>
+       <%if(result[x].username==null){%>
         <div class="col-md-2">
           <a href="/admin/empdetails/<%=result[x].emp_id%>/addcreds">ADD CREDS</a>
         </div>
+       <%}else{%>
+        <div class="col-md-2">
+          
+        </div>
+       <%}%>
         <div class="col-md-2">  
           <form action="/admin/empdetails/<%=result[x].emp_id%>/delete?_method=delete" method="post">
            <button>DELETE</button>

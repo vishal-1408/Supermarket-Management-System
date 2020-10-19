@@ -78,14 +78,16 @@ app.post("/login",(req,res)=>{
             console.log(err);
           }else {
             if(resp==true){
-            con.query(`Select username,emp_id,d_name from (employee natural join login) natural join department  where username='${req.body.username}'`,(err,results)=>{
+            con.query(`Select username,emp_id,d_name from (employee left join login on employee.emp_id=login.employee_id) natural join department  where username='${req.body.username}'`,(err,results)=>{
               req.session.user={
                 username:  results[0].username,
                 empid:results[0].emp_id,
                 role:results[0].d_name
               };
+              if(results[0].d_name=="admin") res.redirect("/admin");
+              else if(results[0].d_name=="managing") res.redirect("/manager")
             //  console.log(req.session.user);
-              res.redirect("/admin");
+
             })
 
           }else{
@@ -101,26 +103,22 @@ app.post("/login",(req,res)=>{
 });
 
 //////////////////////////////////////////////////////admin get routes
+var departments={"admin":1,"managing":2,"billing":3,"inventory":4,"cleaning":5,"helper":6,"security":7};
 app.get("/admin",adminAuth,(req,res)=>{
   res.render("adminIndex")
 })
 
 
-app.get("/admin/empdetails",(req,res)=>{
-  con.query("select * from employee",(e,result)=>{
+app.get("/admin/empdetails",adminAuth,(req,res)=>{
+  con.query("select * from employee left join login on employee.emp_id=login.employee_id",(e,result)=>{  //join use on!!!!!!
     if(e) console.log(e);
     else{
-      // res.status(200).json({
-      //   result:result,
-      //   message:"hello"
-      // })
-      // console.log(result)
       res.render("empdetails",{result:result});
     }
   })
 });
-app.get("/admin/empdetails/:id/view",(req,res)=>{
-  con.query(`select * from employee where emp_id=${req.params.id}`,(e,result)=>{
+app.get("/admin/empdetails/:id/view",adminAuth,(req,res)=>{
+  con.query(`select * from employee natural join department where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
       // res.status(200).json({
@@ -132,65 +130,45 @@ app.get("/admin/empdetails/:id/view",(req,res)=>{
     }
   })
 });
-app.get("/admin/empdetails/:id/modify",(req,res)=>{
-  con.query(`select * from employee where emp_id=${req.params.id}`,(e,result)=>{
+app.get("/admin/empdetails/:id/modify",adminAuth,(req,res)=>{
+  con.query(`select * from employee left join login on employee.emp_id=login.employee_id where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      // res.status(200).json({
-      //   result:result,
-      //   message:"hello"
-      // })
       console.log(result)
       res.render("empmodify",{result:result});
     }
   })
 });
-app.get("/admin/empdetails/:id/addcreds",(req,res)=>{
+app.get("/admin/empdetails/:id/addcreds",adminAuth,(req,res)=>{
   con.query(`select * from employee where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      // res.status(200).json({
-      //   result:result,
-      //   message:"hello"
-      // })
       console.log(result)
       res.render("empaddcreds",{result:result});
     }
   })
 });
 
+
+
+
 /////////////////////////////////////////////////////////////admin post routes
-app.post("/admin/addemp/single",async (req,res)=>{
-  await new Promise((resolve,reject)=>{
-    con.query("select * from department",(e,result)=>{
-         if(e) console.log(e);  
-         else{
-           let dept={};
-           for (x of result){
-             dept[x.d_name]=x.d_id;
-           }
-           resolve(dept);
-         }
-       })
-  })
-  .then((dept)=>{
-     con.query(`insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values('${req.body.name}','${req.body.age}','${req.body.gender}','${req.body.salary}','${req.body.address}','${req.body.mobileno}','${dept[req.body.dept]}')`,(e,result)=>{
+app.post("/admin/addemp/single",adminAuth,async (req,res)=>{
+     con.query(`insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values('${req.body.name}',
+     '${req.body.age}','${req.body.gender}','${req.body.salary}','${req.body.address}','${req.body.mobileno}',
+     '${departments[req.body.dept]}')`,(e,result)=>{
        if(e) console.log(e);
        else{
          console.log(result);
          res.redirect("/admin/empdetails");
        }
      })
-   })
-  .catch(e=>{
-    console.log(e);
-  })
 });
 
-app.post("/admin/addemp/multiple",upload.single('excelfile'),async (req,res)=>{
+app.post("/admin/addemp/multiple",adminAuth,upload.single('excelfile'),async (req,res)=>{
    await new Promise((resolve,reject)=>{
      con.query("select * from department",(e,result)=>{
-          if(e) console.log(e);  
+          if(e) console.log(e);
           else{
             let dept={};
             for (x of result){
@@ -224,8 +202,73 @@ app.post("/admin/addemp/multiple",upload.single('excelfile'),async (req,res)=>{
    })
    .catch(e=>{
      console.log(e);
+     res.redirect("/admin")
    })
 });
+
+app.patch("/admin/empdetails/:id/modify",adminAuth,async (req,res)=>{
+     con.query(`Update employee set emp_name=?,emp_age=?,emp_gender=?,salary=?,emp_address=?,emp_mobileno=?,d_id=? where emp_id=${req.params.id}`,
+      [req.body.name,req.body.age,req.body.gender,req.body.salary,req.body.address,req.body.mobileno,departments[req.body.dept]],
+        (err,update)=>{
+        if(err) console.log(err);
+        else{
+          if(req.body.username){
+            con.query(`select * from login where employee_id=${req.params.id}`,(e,r)=>{
+              bcrypt.compare(req.body.password,r[0].password)
+              .then(response=>{
+                  if(response!=true){
+                    bcrypt.hash(req.body.password,10)
+                     .then(hash=>{
+                      con.query(`Update login set username='${req.body.username}',password='${hash}' where employee_id='${req.params.id}'`,(error,update2)=>{
+                      if(error) console.log(error);
+                     else{
+                       res.redirect("/admin/empdetails");
+                      }
+                    })
+                 }).catch(er=>{
+                   console.log(er);
+                   res.redirect("/admin");
+                 })
+                  }else{
+                    con.query(`Update login set username=${req.body.username} where employee_id=${req.params.id}`,(error2,update2)=>{
+                      if(error2) console.log(error2);
+                     else{
+                       res.redirect("/admin/empdetails");
+                      }
+                  });
+                }
+              
+            })
+            .catch(errors=>{
+              console.log(errors);
+              res.redirect("/admin")
+            })
+          });
+        }
+        else{
+            res.redirect("/admin/empdetails")
+          }
+        }
+      })
+});
+
+app.post("/admin/empdetails/:id/addcreds",adminAuth,async (req,res)=>{
+ await bcrypt.hash(req.body.password,10)
+             .then(hash=>{
+              con.query(`insert into login(username,password,employee_id) values('${req.body.username}','${hash}',${req.params.id})`,
+              (e,result)=>{
+                if(e) console.log(e);
+                else{
+                  res.redirect("/admin/empdetails");
+                }
+              })
+             })
+             .catch(err=>{
+               console.log(err)
+             })
+});
+
+
 
 /////////////////////////////////////admin delete routes
 
@@ -240,7 +283,9 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
 
 
 /////////////////////////////////////////////////////////manaager routes
-
+app.get("/manager",(req,res)=>{
+  res.send("hey");
+});
 
 
 
@@ -288,6 +333,10 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
     else  res.redirect("/login");
   }
 
+  function managerAuth(req,res,next){
+    if(req.session.user!=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin"))  next();
+    else res.redirect("/login")
+  }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
 
 
