@@ -8,6 +8,14 @@ const upload = require("./utils/multer.js");  //even multer won't save the file 
 const excelfile = require('read-excel-file/node');  //takes the input of binary files only!!!!
 const fs=require("fs");
 const methodOverride = require("method-override");
+const postmark = require("postmark");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+// Send an email:
+var client = new postmark.ServerClient(process.env.SERVER_KEY);
+
 
 app.use(session({
   secret:"notthefinalsecretjustatrial",
@@ -104,6 +112,7 @@ app.post("/login",(req,res)=>{
 
 //////////////////////////////////////////////////////admin get routes
 var departments={"admin":1,"managing":2,"billing":3,"inventory":4,"cleaning":5,"helper":6,"security":7};
+
 app.get("/admin",adminAuth,(req,res)=>{
   res.render("adminIndex")
 })
@@ -283,9 +292,120 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
 
 
 /////////////////////////////////////////////////////////manaager routes
+
+//////////////////////////////////////////get routes
+
 app.get("/manager",(req,res)=>{
-  res.send("hey");
+  res.render("managerindex");
 });
+
+
+app.get("/addpor",managerAuth,(req,res)=>{
+  res.render("managerindex");
+});
+
+app.get("/manager",(req,res)=>{
+  res.render("managerindex");
+});
+/////////////////////////////////////////post routes
+
+app.post("/manager/addsup/single",(req,res)=>{
+  const password=req.body.password;
+  const email=req.body.email;
+  const username = req.body.username;
+  bcrypt.hash(password,10)
+  .then(h=>{
+    new Promise((resolve,reject)=>{
+      con.query(`insert into supplier(su_name,su_address,su_email,su_mobileno) values(?) `,[[req.body.name,req.body.address,email,
+        Number(req.body.mobileno)]]
+      ,(err,result)=>{
+        if(err) {
+          reject(err)
+        }else{
+        con.query("Select last_insert_id()",(e,id)=>{
+           if(e) {
+             reject(e)
+           }
+           else{
+             resolve(id[0]["last_insert_id()"]);
+           }
+        })
+         
+        }
+      })
+    })
+    .then(id=>{
+      console.log(id);
+        new Promise((resolve,reject)=>{
+          con.query(`insert into suplogin values('${username}','${h}',${id})`,(error,result)=>{
+            if(error) reject(error);
+            else{
+              resolve(result);
+            }
+          })
+        })
+        .then(result=>{
+          client.sendEmail({
+            "From": "vishal@kaloory.com",
+            "To": email,
+            "subject":"Credentials for Dope Market Tender account",
+            "HtmlBody": `<h4>Hola! Dope market is a new kind of market  with unique shopping experience.</h4>
+            <br>
+            <h5>These are your credentails for logging into Dope market tender account and participate in the tender and be a part of our organization.</h5>
+            <div>
+             <h4> Username: ${username}</h4>
+            </div>
+            <div>
+              <h4>Password: ${password}</h4>
+            </div>
+            
+            <h5>Meet you at : <a href="https://www.google.com">Tender account Login</a></h5>
+            <div>© 2020 DOPE MARKET. All rights reserved.</div>
+            `
+            ,
+            // "TemplateId":20708024,
+            // "TemplateModel":{ 
+            //   "product_url": "DOPE MARKET",
+	          //   "product_name": "DOPE MARKET",
+	          //   "username": username,
+            //   "password": password,
+              
+	          //  "company_name": "DOPE MARKET",
+	          // "company_address":"DOPE MARKET"
+            // },
+            
+            "MessageStream": "outbound"
+          }).then(r=>{
+            console.log(r);
+            res.redirect("/manager");
+          })
+          .catch(e=>{
+            console.log(e);
+          })
+            
+        })
+        .catch(e=>{
+          console.log(e);
+          res.redirect("/manager");
+        })
+        
+    })
+    .catch(e=>{
+      console.log(e);
+      res.redirect("/manager");
+    })
+    
+
+  })
+  .catch(e=>{
+    console.log(e);
+    res.redirect("/manager")
+  })
+  
+})
+
+
+
 
 
 

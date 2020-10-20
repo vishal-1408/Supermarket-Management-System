@@ -38,6 +38,8 @@ emp_id int,
 foreign key(emp_id) references employee(emp_id) on delete cascade
 );
 
+
+
 -- drop table login;
 
 
@@ -49,6 +51,13 @@ su_email varchar(30) not null unique,
 su_mobileno bigint not null unique
 );
 
+
+create table suplogin(
+username varchar(20) not null unique,
+password varchar(500) not null,
+su_id int,
+foreign key(su_id) references supplier(su_id) on delete cascade
+);
 -- drop table supplier;
 
 create table product(
@@ -116,3 +125,9 @@ foreign key (p_id) references product(p_id)
 -- drop table orders;
 
 -- show create table departments;
+
+
+create table discounts(
+discount float not null,
+date_modified 
+);
