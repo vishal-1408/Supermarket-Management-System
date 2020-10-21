@@ -10,7 +10,6 @@ const fs=require("fs");
 const methodOverride = require("method-override");
 const postmark = require("postmark");
 const dotenv = require("dotenv");
-
 dotenv.config();
 
 // Send an email:
@@ -130,11 +129,6 @@ app.get("/admin/empdetails/:id/view",adminAuth,(req,res)=>{
   con.query(`select * from employee natural join department where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      // res.status(200).json({
-      //   result:result,
-      //   message:"hello"
-      // })
-      //console.log(result)
       res.render("empview",{result:result});
     }
   })
@@ -143,7 +137,7 @@ app.get("/admin/empdetails/:id/modify",adminAuth,(req,res)=>{
   con.query(`select * from employee left join login on employee.emp_id=login.employee_id where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      console.log(result)
+
       res.render("empmodify",{result:result});
     }
   })
@@ -152,7 +146,6 @@ app.get("/admin/empdetails/:id/addcreds",adminAuth,(req,res)=>{
   con.query(`select * from employee where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      console.log(result)
       res.render("empaddcreds",{result:result});
     }
   })
@@ -168,7 +161,6 @@ app.post("/admin/addemp/single",adminAuth,async (req,res)=>{
      '${departments[req.body.dept]}')`,(e,result)=>{
        if(e) console.log(e);
        else{
-         console.log(result);
          res.redirect("/admin/empdetails");
        }
      })
@@ -190,7 +182,6 @@ app.post("/admin/addemp/multiple",adminAuth,upload.single('excelfile'),async (re
    .then((dept)=>{
     excelfile("./uploads/"+req.file.filename)
     .then(rows=>{
-      console.log(rows)
       let array =[]
       for (x in rows){
         if(x!=0){
@@ -200,7 +191,6 @@ app.post("/admin/addemp/multiple",adminAuth,upload.single('excelfile'),async (re
       con.query("insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values ?",[array],(e,result)=>{
         if(e) console.log(e);
         else{
-          console.log(result);
           res.redirect("/admin/empdetails");
           fs.unlink("./uploads/"+req.file.filename,(e)=>{
             if(e) console.log(e);
@@ -293,23 +283,91 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
 
 /////////////////////////////////////////////////////////manaager routes
 
+
 //////////////////////////////////////////get routes
 
-app.get("/manager",(req,res)=>{
+app.get("/manager",managerAuth,(req,res)=>{
   res.render("managerindex");
 });
 
 
-app.get("/addpor",managerAuth,(req,res)=>{
-  res.render("managerindex");
+app.get("/manager/addproducts",managerAuth,(req,res)=>{
+  con.query("Select * from supplier",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("addprod",{suppliers:results});
+    }
+  })
+
 });
 
-app.get("/manager",(req,res)=>{
-  res.render("managerindex");
+app.get("/manager/proddetails",managerAuth,(req,res)=>{
+  con.query("Select * from product",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("proddetails",{products:results});
+    }
+  })
 });
+
+app.get("/manager/proddetails/:id/view",managerAuth,(req,res)=>{
+  con.query(`select * from product natural join supplier where p_id=${req.params.id}`,(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("prodview",{result:result});
+    }
+  })
+});
+app.get("/manager/proddetails/:id/modify",managerAuth,(req,res)=>{
+  con.query(`select * from supplier`,(e,suppliers)=>{
+    if(e) console.log(e);
+    else{
+      con.query(`select * from product natural join supplier where p_id=${req.params.id}`,(er,result)=>{
+        if(er) console.log(er);
+        else{
+          res.render("prodmodify",{results:result,suppliers:suppliers});
+        }
+      })
+    }
+  })
+  
+});
+
+app.get("/manager/supdetails",managerAuth,(req,res)=>{
+  con.query("Select * from supplier",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("supdetails",{suppliers:results});
+    }
+  })
+});
+
+app.get("/manager/supdetails/:id/view",managerAuth,(req,res)=>{
+  con.query(`select * from supplier natural join product where supplier.su_id=product.su_id and su_id=${req.params.id}`,(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("supview",{result:result});
+    }
+  })
+});
+app.get("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
+  con.query(`select * from supplier where su_id=${req.params.id}`,(e,supplier)=>{
+    if(e) console.log(e);
+    else{
+          res.render("supmodify",{supplier:supplier});
+        }
+      })
+    })
+
 /////////////////////////////////////////post routes
 
-app.post("/manager/addsup/single",(req,res)=>{
+app.post("/manager/addsup/single",managerAuth,(req,res)=>{
   const password=req.body.password;
   const email=req.body.email;
   const username = req.body.username;
@@ -335,7 +393,6 @@ app.post("/manager/addsup/single",(req,res)=>{
       })
     })
     .then(id=>{
-      console.log(id);
         new Promise((resolve,reject)=>{
           con.query(`insert into suplogin values('${username}','${h}',${id})`,(error,result)=>{
             if(error) reject(error);
@@ -374,9 +431,8 @@ app.post("/manager/addsup/single",(req,res)=>{
 	          // "company_address":"DOPE MARKET"
             // },
             
-            "MessageStream": "outbound"
+            "MessageStream": "outbound"        //
           }).then(r=>{
-            console.log(r);
             res.redirect("/manager");
           })
           .catch(e=>{
@@ -404,10 +460,61 @@ app.post("/manager/addsup/single",(req,res)=>{
   
 })
 
+app.post("/manager/addproducts",managerAuth,(req,res)=>{
+  if(req.sid=="none"){
+    res.redirect("/manager") //as no supplier is present!!
+  }else{
+    con.query("insert into product(p_name,p_mrp,min_qty,su_id,pc_perunit) values(?)",
+    [[req.body.name,Number(req.body.mrp),Number(req.body.qty),Number(req.body.sid),Number(req.body.pcp)]],(err,results)=>{
+      if(err) {
+        console.log(err);
+        res.redirect("/manager/addproducts");
+      }else{
+        res.redirect("/manager");
+      }
+
+    })
+  }
+});
 
 
+app.patch("/manager/proddetails/:id/modify",managerAuth,(req,res)=>{
+  con.query("Update product set p_name=?,p_mrp=?,min_qty=?,su_id=?,pc_perunit=? where p_id=?",
+  [req.body.name,Number(req.body.mrp),Number(req.body.qty),Number(req.body.sid),Number(req.body.pcp),Number(req.params.id)],(e,results)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/manager/proddetails/"+req.params.id+"/view");
+    }
+  })
+})
 
 
+app.delete("/manager/proddetails/:id/delete",managerAuth,(req,res)=>{
+  con.query("Delete from product where p_id=?",
+  [req.params.id],(e,results)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/manager/proddetails");
+    }
+  })
+})
+
+app.patch("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
+  con.query("Update supplier set su_name=?,su_mobileno=?,su_email=?,su_address=? where su_id=?",
+  [req.body.name,Number(req.body.mobileno),req.body.email,req.body.address,req.params.id],(err,result)=>{
+    if(err) console.log(err);
+    else{
+      res.redirect("/manager/supdetails/"+req.params.id+"/view");
+    }
+  })
+})
+
+
+app.delete("/manager/supdetails/:id/delete",managerAuth,(req,res)=>{
+ con.query(`Delete from supplier where su_id=${req.params.id}`,(e,result)=>{
+   res.redirect("/manager/supdetails");
+ })
+})
 
 /////////////////////////////////////////////////////inventory routes
 
