@@ -10,8 +10,9 @@
       <a class="nav-link  active" href="/manager/addproducts">Add Products</a>
       <a class="nav-link" href="/manager/supdetails">Supplier Details</a>
       <a class="nav-link" href="/manager/proddetails">Product Details</a>
-      <a class="nav-link" href="/admin/stats">Payments</a>
-      <a class="nav-link" href="/manager/payments">Open Tender</a>
+      <a class="nav-link" href="/manager/payments">Payments</a>
+      <a class="nav-link" href="/manager/opentender">Open Tender</a>
+      <a class="nav-link" href="/manager/tender/details">Tender Details</a>
     </div>
     <div class="navbar-nav">
       <a class="nav-link" href="/logout">Logout</a>
@@ -25,14 +26,11 @@
     <form action="/manager/addproducts" method="post">
     <div class="container">
       <div class="row">
-        <div class="form-group col-md-6">
+        <div class="form-group col-md-12">
             <label for="name">Product Name</label>
             <input type="text" class="form-control" id="name" name="name">
           </div>
-          <div class="form-group col-md-6">
-        <label for="mrp">Product MRP</label>
-        <input type="number" class="form-control" id="mrp" name="mrp" min=1 step="any">
-      </div>
+          
       </div>
       <div class="row">
         <div class="form-group col-md-6">
@@ -40,11 +38,11 @@
             <input type="number" min=1 class="form-control" id="qty" name="qty">
           </div>
           <div class="form-group col-md-6">
-        <label for="pcp">Purchase Cost per unit</label>
-        <input type="number" class="form-control" id="pcp" name="pcp" step="any">
+            <label for="mrp">Product MRP</label>
+            <input type="number" class="form-control" id="mrp" name="mrp" min=1 step="any">
+          </div>
       </div>
-      </div>
-    <div class="row">
+    <!-- <div class="row">
       <div class="form-group col-md-12">
         <label for="sid">Supplier: </label>
         <select name="sid" id="sid" class="custom-select">
@@ -57,7 +55,7 @@
            <%}%>
         </select>
       </div>
-    </div>
+    </div> -->
 
     <div class="text-center">
       <button class="btn btn-large btn-outline-success">Submit</button>

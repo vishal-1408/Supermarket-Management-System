@@ -11,6 +11,7 @@ const methodOverride = require("method-override");
 const postmark = require("postmark");
 const dotenv = require("dotenv");
 dotenv.config();
+checking();
 
 // Send an email:
 var client = new postmark.ServerClient(process.env.SERVER_KEY);
@@ -55,6 +56,9 @@ app.get("/",(req,res)=>{
 app.get("/login",(req,res)=>{
     res.render("login");
   });
+  app.get("/supplier/login",(req,res)=>{
+    res.render("suplogin");
+  });
 
 
 //
@@ -93,8 +97,42 @@ app.post("/login",(req,res)=>{
               };
               if(results[0].d_name=="admin") res.redirect("/admin");
               else if(results[0].d_name=="managing") res.redirect("/manager")
-            //  console.log(req.session.user);
 
+            })
+
+          }else{
+            res.redirect("back");
+          }
+        }
+      })
+      }else{
+        res.redirect("back");
+      }
+    }
+  })
+});
+
+app.post("/supplier/login",(req,res)=>{
+  con.query(`Select password from suplogin where username='${req.body.username}'`,(err,results)=>{
+    if(err) console.log(err);
+    else{
+    //``  console.log(results);
+      if(results[0]){
+        bcrypt.compare(req.body.password,results[0].password,(er,resp)=>{
+          if(er) {
+            console.log(er);
+          }else {
+            if(resp==true){
+            con.query(`Select username,su_id,su_name,su_email,su_mobileno from supplier natural join suplogin  where username='${req.body.username}'`,(err,results)=>{
+              req.session.user={
+                username:  results[0].username,
+                sid:results[0].su_id,
+                name:results[0].su_name,
+                email:results[0].su_email,
+                mobileno:results[0].su_mobileno,
+                role:"supplier"
+              };
+              res.redirect("/supplier/tenders");
             })
 
           }else{
@@ -281,12 +319,13 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
 })
 
 
-/////////////////////////////////////////////////////////manaager routes
+/////////////////////////////////////////////////////////manager routes
 
 
 //////////////////////////////////////////get routes
 
 app.get("/manager",managerAuth,(req,res)=>{
+
   res.render("managerindex");
 });
 
@@ -315,7 +354,7 @@ app.get("/manager/proddetails",managerAuth,(req,res)=>{
 });
 
 app.get("/manager/proddetails/:id/view",managerAuth,(req,res)=>{
-  con.query(`select * from product natural join supplier where p_id=${req.params.id}`,(e,result)=>{
+  con.query(`select * from product left join supplier on product.su_id=supplier.su_id where p_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
       res.render("prodview",{result:result});
@@ -349,7 +388,8 @@ app.get("/manager/supdetails",managerAuth,(req,res)=>{
 });
 
 app.get("/manager/supdetails/:id/view",managerAuth,(req,res)=>{
-  con.query(`select * from supplier natural join product where supplier.su_id=product.su_id and su_id=${req.params.id}`,(e,result)=>{
+  con.query(`select * from product right join (select * from supplier where supplier.su_id=${req.params.id}) as supplier on product.su_id=supplier.su_id ;`,
+  (e,result)=>{
     if(e) console.log(e);
     else{
       res.render("supview",{result:result});
@@ -364,6 +404,48 @@ app.get("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
         }
       })
     })
+
+
+app.get("/manager/opentender",(req,res)=>{
+  con.query("select p_id,p_name from product where su_id IS NULL",(err,result)=>{
+    if(err) console.log(err);
+    else{
+      con.query("select count(su_id) as count from supplier",(e,count)=>{
+        if(e) console.log(e);
+        else{
+          res.render("opentender",{products:result,count:count.count})
+        }
+      })
+    }
+  })
+
+});
+
+
+app.get("/manager/tender/details",(req,res)=>{
+  con.query("Select * from tenders",(err,tenders)=>{
+    if(err) console.log(err);
+    else{
+      res.render("tenderdet",{tenders});
+    }
+  })
+})
+
+app.get("/manager/tender/:id/details",(req,res)=>{
+  console.log(req.params.id)
+  con.query("Select * from tenders natural join t_products natural join product where t_id= ? ",[Number(req.params.id)],(err,tender)=>{
+    if(err) console.log(err);
+    else{
+      con.query("Select * from supplier left join t_supplier on supplier.su_id=t_supplier.su_id where t_id=?",[Number(req.params.id)],(error,suppliers)=>{
+        if(error) console.log(error);
+        else{
+          res.render("managertender",{tender,suppliers});
+        }
+      })
+
+    }
+  })
+})
 
 /////////////////////////////////////////post routes
 
@@ -380,14 +462,16 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
         if(err) {
           reject(err)
         }else{
-        con.query("Select last_insert_id()",(e,id)=>{
-           if(e) {
-             reject(e)
-           }
-           else{
-             resolve(id[0]["last_insert_id()"]);
-           }
-        })
+          console.log(result)
+          resolve(result.insertId);
+        // con.query("Select last_insert_id()",(e,id)=>{
+        //    if(e) {
+        //      reject(e)
+        //    }
+        //    else{
+        //      resolve(id[0]["last_insert_id()"]);
+        //    }
+        // })
          
         }
       })
@@ -431,7 +515,7 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
 	          // "company_address":"DOPE MARKET"
             // },
             
-            "MessageStream": "outbound"        //
+            "MessageStream": "outbound"        //transactional stream!!
           }).then(r=>{
             res.redirect("/manager");
           })
@@ -461,11 +545,8 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
 })
 
 app.post("/manager/addproducts",managerAuth,(req,res)=>{
-  if(req.sid=="none"){
-    res.redirect("/manager") //as no supplier is present!!
-  }else{
-    con.query("insert into product(p_name,p_mrp,min_qty,su_id,pc_perunit) values(?)",
-    [[req.body.name,Number(req.body.mrp),Number(req.body.qty),Number(req.body.sid),Number(req.body.pcp)]],(err,results)=>{
+    con.query("insert into product(p_name,p_mrp,min_qty) values(?)",
+    [[req.body.name,Number(req.body.mrp),Number(req.body.qty)]],(err,results)=>{
       if(err) {
         console.log(err);
         res.redirect("/manager/addproducts");
@@ -474,7 +555,6 @@ app.post("/manager/addproducts",managerAuth,(req,res)=>{
       }
 
     })
-  }
 });
 
 
@@ -501,9 +581,18 @@ app.delete("/manager/proddetails/:id/delete",managerAuth,(req,res)=>{
 
 app.patch("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
   con.query("Update supplier set su_name=?,su_mobileno=?,su_email=?,su_address=? where su_id=?",
-  [req.body.name,Number(req.body.mobileno),req.body.email,req.body.address,req.params.id],(err,result)=>{
+  [req.body.name,Number(req.body.mobileno),req.body.email,req.body.address,req.params.id],async (err,result)=>{
     if(err) console.log(err);
     else{
+      if(req.body.username){
+          const hash = await bcrypt.hash(req.body.password,10);
+          con.query("Update suplogin set username=?,password=? where su_id=?",[req.body.username,hash,req.params.id],(e,r)=>{
+            if(e) console.log(e);
+            else{
+             console.log("updated!")
+            }
+          })
+      }
       res.redirect("/manager/supdetails/"+req.params.id+"/view");
     }
   })
@@ -514,6 +603,44 @@ app.delete("/manager/supdetails/:id/delete",managerAuth,(req,res)=>{
  con.query(`Delete from supplier where su_id=${req.params.id}`,(e,result)=>{
    res.redirect("/manager/supdetails");
  })
+})
+
+app.post("/manager/opentender",(req,res)=>{
+  con.query("insert into tenders(t_name,t_opentime,t_closetime,t_status) values(?)",
+  [[req.body.name,req.body.sd+" "+req.body.st+":00",req.body.ed+" "+req.body.et+":00","upcoming"]],(e,results)=>{
+      if(e) console.log(e);
+      else{
+        let tid=results.insertId;
+        let array=[];
+        for(let x in req.body.products){
+          array[x]=[tid,Number(req.body.products[x])];
+        }
+        con.query("insert into t_products(t_id,p_id) values ?",[array],(error,result)=>{
+          if(error) console.log(error);
+          else{
+            con.query("select su_email,su_name from supplier",async (er,suppliers)=>{
+              if(er) console.log(er);
+              else{
+                for(x in suppliers){
+                  await client.sendEmail({
+                    From:process.env.FROM_EMAIL,
+                    To:suppliers[x].su_email,
+                    Body:"A tender has been opened",
+                    HtmlBody:`Hi! ${suppliers[x].su_name}, we have opened a tender.
+                    It will start at ${req.body.sd+" "+req.body.st} and will end at ${req.body.ed+" "+req.body.et}`
+                  });
+                }
+                res.redirect("/manager/tender/details")
+              }
+            })
+            
+          }
+        })
+        
+
+                //con.query("insert into(t_name,t_opentime,t_closetime,t_status) values(?)",
+      }
+  })
 })
 
 /////////////////////////////////////////////////////inventory routes
@@ -539,10 +666,78 @@ app.delete("/manager/supdetails/:id/delete",managerAuth,(req,res)=>{
 // });
 
 
-//////////////////////////////////////////////////////admin routes
+//////////////////////////////////////////////////////supplier routes
+//////get routes
+app.get("/supplier/tenders",supplierAuth,(req,res)=>{
+  con.query("select * from tenders where t_id not in (select t_id from t_supplier where su_id = ?)",[req.session.user.sid],(error,tenders)=>{
+    if(error) console.log(error);
+    else{
+      res.render("suptenderdet",{tenders});
+    }
+  })
+})
 
+app.get("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
+      con.query("select p_id,t_id,t_name,t_closetime,t_status,p_name,p_mrp from (select * from tenders where t_id=?) as tender natural join t_products natural join product",
+      [Number(req.params.id)],(e,tender)=>{
+        if(e) console.log(e);
+        else{
+          console.log(tender)
+         if(tender[0].t_status=="open"){
+          res.render("supparticipate",{tender});
+         }
+        }
+})
+});
 
-/////////////////////////////////////////////////////////manaager routes
+app.get("/supplier/tenders/participated",supplierAuth,(req,res)=>{
+  con.query("select * from tenders where t_id in (select t_id from t_supplier where su_id =?)",[req.session.user.sid],
+  (error,tenders)=>{
+    if(error) console.log(error);
+    else{
+      res.render("suptenderpart",{tenders});
+    }
+  })
+})
+
+app.get("/supplier/tenders/:id/details",supplierAuth,(req,res)=>{
+        con.query("select * from (Select t_id,ternary.su_id,cost,p_mrp,p_name from ternary inner join product on ternary.p_id=product.p_id) as tender natural join tenders where t_id=? and su_id = ?",[Number(req.params.id),Number(req.session.user.sid)],
+        (error,responses)=>{
+            if(error) console.log(error);
+            else{
+                console.log(responses)
+                res.render("suptender",{responses});
+            }
+        })
+})
+
+////////////////post routes
+app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
+
+  const keys = Object.keys(req.body.p);        //if we give p[integers] then surely they become an arrya if they are continuous itnegersl
+  const values = Object.values(req.body.p); 
+  const su_id = Number(req.session.user.sid);
+  let array=[];
+  for(x in keys){
+    array[x]=[Number(req.params.id),su_id,Number(keys[x].substring(1)),Number(values[x])];
+  }
+  console.log(array);
+  con.query("insert into t_supplier(t_id,su_id) values(?)",[[Number(req.params.id),su_id]],(error,result)=>{
+    if(error) console.log(error)
+    else{
+      con.query("Insert into ternary(t_id,su_id,p_id,cost) values ?",[array],(e,placed)=>{
+        if(e) console.log(e);
+        else{
+          res.redirect("/supplier/tenders");
+        }
+      })
+    }
+   
+  })
+ 
+
+});
+/////////////////////////////////////////////////////////manager routes
 
 
 
@@ -554,19 +749,58 @@ app.delete("/manager/supdetails/:id/delete",managerAuth,(req,res)=>{
 
 ///////////////////////////////////////////////////////billing routes
 
+
+
+
+//////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////middlewares
   function adminAuth(req,res,next){
     if(req.session.user!=undefined && req.session.user.role=="admin") next();
-    else  res.redirect("/login");
+    else res.redirect("/login");
   }
 
   function managerAuth(req,res,next){
     if(req.session.user!=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin"))  next();
     else res.redirect("/login")
   }
+
+  function supplierAuth(req,res,next){
+    if(req.session.user!=undefined && req.session.user.role=="supplier") next();
+    else res.redirect("/supplier/login")
+    
+  }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
 
-
+function checking(){
+  let now;
+  setInterval(()=>{
+   con.query("Select t_id,t_opentime,t_closetime,t_status from tenders",(e,tenders)=>{
+     if(e) console.log(e);
+     else{
+       now = Date.now();
+       for(let x in tenders){
+         if(new Date(tenders[x].t_opentime).getTime()<=now && now<new Date(tenders[x].t_closetime) && tenders[x].t_status!="open"){
+           con.query(`Update tenders set t_status='open' where t_id=${tenders[x].t_id}`,(error,tender)=>{
+             if(error) console.log(error);
+             else{
+               console.log("opened!!!");
+             }
+           })
+         }
+         if(now>new Date(tenders[x].t_closetime) && tenders[x].t_status!="closed"){
+          con.query(`Update tenders set t_status='closed' where t_id=${tenders[x].t_id} `,(error,tender)=>{
+            if(error) console.log(error);
+            else{
+              console.log("closed!!!");
+            }
+          })
+         }
+       }
+     }
+   })
+  },2000)
+}
 
 
 

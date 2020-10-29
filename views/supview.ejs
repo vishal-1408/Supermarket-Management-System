@@ -12,6 +12,7 @@
         <a class="nav-link" href="/manager/proddetails">Product Details</a>
         <a class="nav-link" href="/admin/stats">Payments</a>
         <a class="nav-link" href="/manager/payments">Open Tender</a>
+        <a class="nav-link" href="/manager/tender/details">Tender Details</a>
       </div>
       <div class="navbar-nav">
         <a class="nav-link" href="/logout">Logout</a>
@@ -39,12 +40,16 @@
     </div>
     <hr>
     <h4>Products supplied</h4>
-     <%for(let i=0;i<=result.length-1;i++){%>
-       <div class="row">
-           <div class="col-md-2"><%=i+1%></div>
-           <div class="col-md-10"><%=result[i].p_name%></div>
-       </div>
-     <%}%>
+    <% if(result[0].p_id){%>
+      <%for(let i=0;i<=result.length-1;i++){%>
+        <div class="row">
+            <div class="col-md-2"><%=i+1%></div>
+            <div class="col-md-10"><%=result[i].p_name%></div>
+        </div>
+      <%}%>
+     <%}else{%>
+       NO PRODUCTS ARE BEING SUPLIED BY THE SUPPLIER YET!!
+    <% }%>
     </div>
 
 <%- include("partials/footer.ejs") %>

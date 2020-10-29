@@ -1,0 +1,111 @@
+<%- include("partials/header.ejs") %>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Navbar</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-link" href="/supplier/home">Home <span class="sr-only">(current)</span></a>
+        <a class="nav-link  active" href="/supplier/tenders">Tender Details</a>
+        <a class="nav-link" href="/supplier/tenders/participated">Tenders Participated</a>
+      </div>
+      <div class="navbar-nav">
+        <a class="nav-link" href="/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+   <h1 class="text-center my-5">UPCOMING TENDERS!!!</h1>
+   <%let i=0;%>
+   <%for(let x in tenders){%>
+    <%  if(tenders[x].t_status=="upcoming"){%>
+        <div class="row">
+            <div class="col-md-3">
+                <h4><%=tenders[x].t_name%></h4>
+            </div>
+            <div class="col-md-3">
+                   <h4>Start Time: <%=tenders[x].t_opentime%></h4>
+            </div>
+                <div class="col-md-3">
+                 <h4>End Time: <%=tenders[x].t_closetime%></h4>
+              </div>
+              <div class="col-md-3">
+                <a href="/supplier/tenders/<%=tenders[x].t_id%>/details" class="btn btn-outline-success">Details</a>
+             </div>
+              
+            </div>
+
+        <%i=1;%>
+      <%}%>
+  <% } if(i==0){%>
+       <h1 class="text-center">
+           NO UPCOMING TENDERS!!
+       </h1>
+   <%}%>
+  </div>
+  <hr>
+  <div class="container my-5">
+    <h1 class="text-center my-5">ONGOING TENDERS!!!</h1>
+    <%i=0;%>
+    <%for(let x in tenders){%>
+     <%  if(tenders[x].t_status=="open"){%>
+        <div class="row">
+            <div class="col-md-3">
+                <h4><%=tenders[x].t_name%></h4>
+            </div>
+            <div class="col-md-3">
+                   <h4>Start Time: <%=tenders[x].t_opentime%></h4>
+            </div>
+                <div class="col-md-3">
+                 <h4>End Time: <%=tenders[x].t_closetime%></h4>
+              </div>
+              <div class="col-md-3">
+                <a href="/supplier/tenders/<%=tenders[x].t_id%>/participate" class="btn btn-outline-success">Participate</a>
+             </div>
+              
+            </div>
+         <%i=1;%>
+       <%}%>
+   <% } if(i==0){%>
+        <h1 class="text-center">
+            NO ONGOING TENDERS!!
+        </h1>
+    <%}%>
+   </div>
+<hr>
+<div class="container my-5">
+    <h1 class="text-center my-5">CLOSED TENDERS!!!</h1>
+    <%i=0;%>
+    <%for(let x in tenders){%>
+     <%  if(tenders[x].t_status=="closed"){%>
+        <div class="row">
+            <div class="col-md-3">
+                <h4><%=tenders[x].t_name%></h4>
+            </div>
+            <div class="col-md-3">
+                   <h4>Start Time: <%=tenders[x].t_opentime%></h4>
+            </div>
+                <div class="col-md-3">
+                 <h4>End Time: <%=tenders[x].t_closetime%></h4>
+              </div>
+              <div class="col-md-3">
+                <a href="/supplier/tenders/<%=tenders[x].t_id%>/results" class="btn btn-outline-success">Results</a>
+             </div>
+              
+            </div>
+        <% i=1;%>
+       <%}%>
+   <% } if(i==0){%>
+        <h1 class="text-center">
+            NO CLOSED TENDERS!!
+        </h1>
+    <%}%>
+   </div>
+<hr>
+
+
+
+  
+  <%- include("partials/footer.ejs") %>

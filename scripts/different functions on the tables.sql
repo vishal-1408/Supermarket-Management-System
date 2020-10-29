@@ -5,7 +5,29 @@ Select * from login;
 Select * from department;
 select * from supplier;
 select * from suplogin;
+select * from product;
+select * from tenders;
 
+select * from t_products;
+select * from t_supplier;
+select * from ternary;
+
+truncate table tenders;
+
+delete from supplier where su_id=4 or su_id=6;
+delete from tenders where t_id=1 or t_id=2;
+truncate table tenders;
+Update  product set p_name='abcd',p_mrp=40.3,min_qty=5,su_id=1,pc_perunit=30.3 where p_id=1
+ ;
+
+insert into product(p_name,p_mrp,min_qty,su_id,pc_perunit) values ('abcd', 45.3, 5, 2, 33.3);
+
+
+alter table product
+modify stock_avail int not null default 0;
+
+alter table product
+add column pc_perunit float not null
 delete from supplier where su_id=1;
 alter table supplier AUTO_INCREMENT=1;
 truncate suplogin;
@@ -23,6 +45,7 @@ ALTER TABLE login CHANGE emp_id employee_id int;
 
 desc login;
 
+select * from supplier natural join product where supplier.su_id=product.su_id and su_id=1;
 
 
 alter table employee
@@ -48,5 +71,23 @@ where emp_id=1;
 
 delete from login where emp_id<>1;
 
+delete from product where p_id=4 or  p_id=7;
 
-desc employee
+delete from supplier where su_id=3;
+select * from suplogin;
+
+insert into supplier(su_name,su_address,su_email,su_mobileno) values(?)
+
+select * from product natural join (select * from supplier where supplier.su_id=1) as supplier ;
+select * from product natural join (select * from supplier where supplier.su_id=1) as supplier ;
+select * from product right join (select * from supplier where supplier.su_id=2) as supplier on product.su_id=supplier.su_id ;
+desc employee;
+
+Select * from tenders where t_id in (Select t_id from t_products natural join (select unique_id from t_suppliers where su_id = 
+
+alter table product
+add pc_perunit float;
+
+select p_id,t_id,t_name,t_closetime,p_name,p_mrp from (select * from tenders where t_id=1) as tender natural join t_products natural join product;
+
+select * from tenders where t_id not in (select t_id from t_supplier where su_id = 1)
