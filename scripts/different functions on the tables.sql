@@ -8,12 +8,19 @@ select * from suplogin;
 select * from product;
 select * from tenders;
 
+update tenders set t_closetime='2020-10-29 19:13:00' where t_id=1;
 select * from t_products;
 select * from t_supplier;
 select * from ternary;
+select * from ternary group by p_id order by cost desc;
+insert into ternary(t_id,su_id,p_id,cost) values(1,8,1,25);
+delete from ternary where t_id=1;
+insert into t_supplier(t_id,su_id) values(1,7);
+delete from t_supplier where t_id=1;
 
 truncate table tenders;
 
+insert into supplier(su_name,su_address,su_email,su_mobileno) values('vishal reddy','sdasds','vishal123@kaloory.com',1234567890 )
 delete from supplier where su_id=4 or su_id=6;
 delete from tenders where t_id=1 or t_id=2;
 truncate table tenders;
@@ -90,4 +97,11 @@ add pc_perunit float;
 
 select p_id,t_id,t_name,t_closetime,p_name,p_mrp from (select * from tenders where t_id=1) as tender natural join t_products natural join product;
 
-select * from tenders where t_id not in (select t_id from t_supplier where su_id = 1)
+
+select * from tenders where t_id not in (select t_id from t_supplier where su_id = 1);
+
+Select * from ternary natural join product on ternary.p_id=product.p_id natural join tenders  on ternary.p_id=product.p_id and ternary.t_id=tenders.t_id where t_id=1 and su_id = 7;
+
+Select suppliers.su_id,su_name,product.p_id,p_name,p_mrp,cost from product inner join (Select supplier.su_id,su_name,p_id,cost from ternary inner join supplier on ternary.su_id=supplier.su_id where t_id=${Number(req.params.id)}) as suppliers on suppliers.p_id=product.p_id order by product.p_id,cost;
+
+

@@ -63,10 +63,15 @@
               <div class="col-md-2">
                 <a href="/supplier/tenders/<%=tenders[x].t_id%>/details" class="btn btn-outline-success">Details</a>
              </div>
-              <div class="col-md-2">
+             <%if(tenders[x].status=="selected"){%>
+              <div class="col-md-3">
                 <a href="/supplier/tenders/<%=tenders[x].t_id%>/results" class="btn btn-outline-success">Results</a>
-             </div>
-              
+              </div>
+           <% }else{%>
+              <div class="col-md-3" style="display: block;">
+                
+              </div>
+            <%}%>
             </div>
         <% i=1;%>
        <%}%>

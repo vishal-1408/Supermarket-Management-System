@@ -447,6 +447,22 @@ app.get("/manager/tender/:id/details",(req,res)=>{
   })
 })
 
+app.get("/manager/tender/:id/results",(req,res)=>{
+  con.query("Select * from tenders where t_id=?",[Number(req.params.id)],(e,tender)=>{
+    if(e) console.log(e);
+    else{
+      con.query(`Select suppliers.su_id,su_name,product.p_id,p_name,p_mrp,cost,pc_perunit from product inner join (Select supplier.su_id,su_name,p_id,cost from ternary inner join supplier on ternary.su_id=supplier.su_id where t_id=${Number(req.params.id)}) as suppliers on suppliers.p_id=product.p_id order by product.p_id,cost;
+      `,(err,result)=>{
+         if(err) console.log(err);
+         else{
+           res.render("tenderselect",{tender,result});
+         }
+       })
+    }
+  })
+  
+})
+
 /////////////////////////////////////////post routes
 
 app.post("/manager/addsup/single",managerAuth,(req,res)=>{
@@ -643,6 +659,67 @@ app.post("/manager/opentender",(req,res)=>{
   })
 })
 
+
+app.patch("/manager/tender/:id/results",async (req,res)=>{
+  const id= Number(req.params.id);
+  const pid = Number(req.body.product);
+  const sid = Number(req.body.supplier);
+  const cost = Number(req.body.cost);
+  console.log(req.body)
+  try{
+    console.log("e1")
+   const product = await new Promise((resolve,reject)=>{
+      con.query("Select * from product left join supplier on supplier.su_id=product.su_id where p_id=?",[pid],async (e,p)=>{
+        if(e) reject(e);
+        else{
+          if(p[0].su_id){
+            await client.sendEmail({
+              To:p[0].su_email,
+              From:process.env.FROM_EMAIL,
+              Subject:"Discontinue the contract",
+              HtmlBody:`<h4>We are sorry for discontinuing the contract of the supply of the product ${p[0].p_name}</h4>`
+            })
+          }
+          resolve(p[0]);
+        }
+    })
+  });
+  console.log("e1")
+  await new Promise((resolve,reject)=>{
+    con.query("Update product set su_id=?,pc_perunit=? where p_id=?",[sid,cost,pid],(err,result)=>{
+      if(err) reject(err);
+      else{
+        con.query("Select su_email from  supplier where su_id=?",[sid],async(erro,email)=>{
+          if(erro) reject(erro);
+          else{
+            await client.sendEmail({
+              To:email[0].su_email,
+              From:process.env.FROM_EMAIL,
+              Subject:"Signing the contract",
+              HtmlBody:`<h4>Congratulations!! You have won the tender for the supply of the product ${product.p_name}</h4>.`
+            });
+            resolve(1);
+          }
+        })
+        }
+      });
+    });
+    console.log("e1")
+  res.redirect("back");
+  }catch(e){
+    console.log(e);
+  }
+})
+
+app.patch("/manager/tender/:id/submit",(req,res)=>{
+    con.query("Update tenders set t_status='selected' where t_id=?",[Number(req.params.id)],(er,t)=>{
+      if(er) console.log(er)
+      else{
+        res.redirect("back")
+      }
+    });
+})
+
 /////////////////////////////////////////////////////inventory routes
 
 
@@ -711,6 +788,23 @@ app.get("/supplier/tenders/:id/details",supplierAuth,(req,res)=>{
         })
 })
 
+
+app.get("/supplier/tenders/:id/results",supplierAuth,(req,res)=>{
+ con.query("Select * from t_products natural join product where t_id=?",[Number(req.params.id)],(e,product)=>{{
+   if(e) console.log(e);
+   else{
+     con.query("Select * from t_supplier where su_id=?",[req.session.user.sid],(error,check)=>{
+      if(error) console.log(error);
+      else{
+        console.log(check)
+        res.render("suptresults",{sid:req.session.user.sid,product,check});
+      }
+
+     })
+     
+   }
+ }})
+});
 ////////////////post routes
 app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
 
@@ -788,7 +882,7 @@ function checking(){
              }
            })
          }
-         if(now>new Date(tenders[x].t_closetime) && tenders[x].t_status!="closed"){
+         if(now>new Date(tenders[x].t_closetime) && tenders[x].t_status!="closed" && tenders[x].t_status!="selected"){
           con.query(`Update tenders set t_status='closed' where t_id=${tenders[x].t_id} `,(error,tender)=>{
             if(error) console.log(error);
             else{

@@ -140,9 +140,9 @@ t_opentime timestamp not null,
 t_closetime timestamp not null,
 t_status varchar(15) not null,
 t_created timestamp default now(),
-check(t_status="open" or t_status="closed" or t_status="upcoming"));
+check(t_status="open" or t_status="closed" or t_status="upcoming" or t_status="selected"));
 
-drop table tenders;
+-- drop table tenders;
 
 create table t_products(
  p_id int not null,
@@ -150,7 +150,7 @@ create table t_products(
  foreign key(p_id) references product(p_id) on delete cascade,
  foreign key(t_id) references tenders(t_id) on delete cascade);
  
- drop table t_products;
+--  drop table t_products;
  
  create table t_supplier(
  t_id int not null,
@@ -159,7 +159,7 @@ create table t_products(
  foreign key(su_id) references supplier(su_id) on delete cascade
  );
  
-  drop table t_supplier;
+--   drop table t_supplier;
   
  create table ternary(
  t_id int not null,
@@ -170,6 +170,6 @@ create table t_products(
  foreign key(su_id) references supplier(su_id) on delete cascade,
   foreign key(p_id) references product(p_id) on delete cascade);
  
- 
+--  drop table ternary;
  
  
