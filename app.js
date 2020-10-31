@@ -10,8 +10,8 @@ const fs=require("fs");
 const methodOverride = require("method-override");
 const postmark = require("postmark");
 const dotenv = require("dotenv");
-
 dotenv.config();
+checking();
 
 // Send an email:
 var client = new postmark.ServerClient(process.env.SERVER_KEY);
@@ -56,6 +56,9 @@ app.get("/",(req,res)=>{
 app.get("/login",(req,res)=>{
     res.render("login");
   });
+  app.get("/supplier/login",(req,res)=>{
+    res.render("suplogin");
+  });
 
 
 //
@@ -94,8 +97,42 @@ app.post("/login",(req,res)=>{
               };
               if(results[0].d_name=="admin") res.redirect("/admin");
               else if(results[0].d_name=="managing") res.redirect("/manager")
-            //  console.log(req.session.user);
 
+            })
+
+          }else{
+            res.redirect("back");
+          }
+        }
+      })
+      }else{
+        res.redirect("back");
+      }
+    }
+  })
+});
+
+app.post("/supplier/login",(req,res)=>{
+  con.query(`Select password from suplogin where username='${req.body.username}'`,(err,results)=>{
+    if(err) console.log(err);
+    else{
+    //``  console.log(results);
+      if(results[0]){
+        bcrypt.compare(req.body.password,results[0].password,(er,resp)=>{
+          if(er) {
+            console.log(er);
+          }else {
+            if(resp==true){
+            con.query(`Select username,su_id,su_name,su_email,su_mobileno from supplier natural join suplogin  where username='${req.body.username}'`,(err,results)=>{
+              req.session.user={
+                username:  results[0].username,
+                sid:results[0].su_id,
+                name:results[0].su_name,
+                email:results[0].su_email,
+                mobileno:results[0].su_mobileno,
+                role:"supplier"
+              };
+              res.redirect("/supplier/tenders");
             })
 
           }else{
@@ -130,11 +167,6 @@ app.get("/admin/empdetails/:id/view",adminAuth,(req,res)=>{
   con.query(`select * from employee natural join department where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      // res.status(200).json({
-      //   result:result,
-      //   message:"hello"
-      // })
-      //console.log(result)
       res.render("empview",{result:result});
     }
   })
@@ -143,7 +175,7 @@ app.get("/admin/empdetails/:id/modify",adminAuth,(req,res)=>{
   con.query(`select * from employee left join login on employee.emp_id=login.employee_id where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      console.log(result)
+
       res.render("empmodify",{result:result});
     }
   })
@@ -152,7 +184,6 @@ app.get("/admin/empdetails/:id/addcreds",adminAuth,(req,res)=>{
   con.query(`select * from employee where emp_id=${req.params.id}`,(e,result)=>{
     if(e) console.log(e);
     else{
-      console.log(result)
       res.render("empaddcreds",{result:result});
     }
   })
@@ -168,7 +199,6 @@ app.post("/admin/addemp/single",adminAuth,async (req,res)=>{
      '${departments[req.body.dept]}')`,(e,result)=>{
        if(e) console.log(e);
        else{
-         console.log(result);
          res.redirect("/admin/empdetails");
        }
      })
@@ -190,7 +220,6 @@ app.post("/admin/addemp/multiple",adminAuth,upload.single('excelfile'),async (re
    .then((dept)=>{
     excelfile("./uploads/"+req.file.filename)
     .then(rows=>{
-      console.log(rows)
       let array =[]
       for (x in rows){
         if(x!=0){
@@ -200,7 +229,6 @@ app.post("/admin/addemp/multiple",adminAuth,upload.single('excelfile'),async (re
       con.query("insert into employee(emp_name,emp_age,emp_gender,salary,emp_address,emp_mobileno,d_id) values ?",[array],(e,result)=>{
         if(e) console.log(e);
         else{
-          console.log(result);
           res.redirect("/admin/empdetails");
           fs.unlink("./uploads/"+req.file.filename,(e)=>{
             if(e) console.log(e);
@@ -291,25 +319,153 @@ app.delete("/admin/empdetails/:id/delete",(req,res)=>{
 })
 
 
-/////////////////////////////////////////////////////////manaager routes
+/////////////////////////////////////////////////////////manager routes
+
 
 //////////////////////////////////////////get routes
 
-app.get("/manager",(req,res)=>{
+app.get("/manager",managerAuth,(req,res)=>{
+
   res.render("managerindex");
 });
 
 
-app.get("/addpor",managerAuth,(req,res)=>{
-  res.render("managerindex");
+app.get("/manager/addproducts",managerAuth,(req,res)=>{
+  con.query("Select * from supplier",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("addprod",{suppliers:results});
+    }
+  })
+
 });
 
-app.get("/manager",(req,res)=>{
-  res.render("managerindex");
+app.get("/manager/proddetails",managerAuth,(req,res)=>{
+  con.query("Select * from product",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("proddetails",{products:results});
+    }
+  })
 });
+
+app.get("/manager/proddetails/:id/view",managerAuth,(req,res)=>{
+  con.query(`select * from product left join supplier on product.su_id=supplier.su_id where p_id=${req.params.id}`,(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("prodview",{result:result});
+    }
+  })
+});
+app.get("/manager/proddetails/:id/modify",managerAuth,(req,res)=>{
+  con.query(`select * from supplier`,(e,suppliers)=>{
+    if(e) console.log(e);
+    else{
+      con.query(`select * from product natural join supplier where p_id=${req.params.id}`,(er,result)=>{
+        if(er) console.log(er);
+        else{
+          res.render("prodmodify",{results:result,suppliers:suppliers});
+        }
+      })
+    }
+  })
+  
+});
+
+app.get("/manager/supdetails",managerAuth,(req,res)=>{
+  con.query("Select * from supplier",(err,results)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/manager");
+    }else{
+      res.render("supdetails",{suppliers:results});
+    }
+  })
+});
+
+app.get("/manager/supdetails/:id/view",managerAuth,(req,res)=>{
+  con.query(`select * from product right join (select * from supplier where supplier.su_id=${req.params.id}) as supplier on product.su_id=supplier.su_id ;`,
+  (e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("supview",{result:result});
+    }
+  })
+});
+app.get("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
+  con.query(`select * from supplier where su_id=${req.params.id}`,(e,supplier)=>{
+    if(e) console.log(e);
+    else{
+          res.render("supmodify",{supplier:supplier});
+        }
+      })
+    })
+
+
+app.get("/manager/opentender",(req,res)=>{
+  con.query("select p_id,p_name from product where su_id IS NULL",(err,result)=>{
+    if(err) console.log(err);
+    else{
+      con.query("select count(su_id) as count from supplier",(e,count)=>{
+        if(e) console.log(e);
+        else{
+          res.render("opentender",{products:result,count:count.count})
+        }
+      })
+    }
+  })
+
+});
+
+
+app.get("/manager/tender/details",(req,res)=>{
+  con.query("Select * from tenders",(err,tenders)=>{
+    if(err) console.log(err);
+    else{
+      res.render("tenderdet",{tenders});
+    }
+  })
+})
+
+app.get("/manager/tender/:id/details",(req,res)=>{
+  console.log(req.params.id)
+  con.query("Select * from tenders natural join t_products natural join product where t_id= ? ",[Number(req.params.id)],(err,tender)=>{
+    if(err) console.log(err);
+    else{
+      con.query("Select * from supplier left join t_supplier on supplier.su_id=t_supplier.su_id where t_id=?",[Number(req.params.id)],(error,suppliers)=>{
+        if(error) console.log(error);
+        else{
+          res.render("managertender",{tender,suppliers});
+        }
+      })
+
+    }
+  })
+})
+
+app.get("/manager/tender/:id/results",(req,res)=>{
+  con.query("Select * from tenders where t_id=?",[Number(req.params.id)],(e,tender)=>{
+    if(e) console.log(e);
+    else{
+      con.query(`Select suppliers.su_id,su_name,product.p_id,p_name,p_mrp,cost,pc_perunit from product inner join (Select supplier.su_id,su_name,p_id,cost from ternary inner join supplier on ternary.su_id=supplier.su_id where t_id=${Number(req.params.id)}) as suppliers on suppliers.p_id=product.p_id order by product.p_id,cost;
+      `,(err,result)=>{
+         if(err) console.log(err);
+         else{
+           res.render("tenderselect",{tender,result});
+         }
+       })
+    }
+  })
+  
+})
+
 /////////////////////////////////////////post routes
 
-app.post("/manager/addsup/single",(req,res)=>{
+app.post("/manager/addsup/single",managerAuth,(req,res)=>{
   const password=req.body.password;
   const email=req.body.email;
   const username = req.body.username;
@@ -322,20 +478,21 @@ app.post("/manager/addsup/single",(req,res)=>{
         if(err) {
           reject(err)
         }else{
-        con.query("Select last_insert_id()",(e,id)=>{
-           if(e) {
-             reject(e)
-           }
-           else{
-             resolve(id[0]["last_insert_id()"]);
-           }
-        })
+          console.log(result)
+          resolve(result.insertId);
+        // con.query("Select last_insert_id()",(e,id)=>{
+        //    if(e) {
+        //      reject(e)
+        //    }
+        //    else{
+        //      resolve(id[0]["last_insert_id()"]);
+        //    }
+        // })
          
         }
       })
     })
     .then(id=>{
-      console.log(id);
         new Promise((resolve,reject)=>{
           con.query(`insert into suplogin values('${username}','${h}',${id})`,(error,result)=>{
             if(error) reject(error);
@@ -374,9 +531,8 @@ app.post("/manager/addsup/single",(req,res)=>{
 	          // "company_address":"DOPE MARKET"
             // },
             
-            "MessageStream": "outbound"
+            "MessageStream": "outbound"        //transactional stream!!
           }).then(r=>{
-            console.log(r);
             res.redirect("/manager");
           })
           .catch(e=>{
@@ -404,10 +560,165 @@ app.post("/manager/addsup/single",(req,res)=>{
   
 })
 
+app.post("/manager/addproducts",managerAuth,(req,res)=>{
+    con.query("insert into product(p_name,p_mrp,min_qty) values(?)",
+    [[req.body.name,Number(req.body.mrp),Number(req.body.qty)]],(err,results)=>{
+      if(err) {
+        console.log(err);
+        res.redirect("/manager/addproducts");
+      }else{
+        res.redirect("/manager");
+      }
+
+    })
+});
 
 
+app.patch("/manager/proddetails/:id/modify",managerAuth,(req,res)=>{
+  con.query("Update product set p_name=?,p_mrp=?,min_qty=?,su_id=?,pc_perunit=? where p_id=?",
+  [req.body.name,Number(req.body.mrp),Number(req.body.qty),Number(req.body.sid),Number(req.body.pcp),Number(req.params.id)],(e,results)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/manager/proddetails/"+req.params.id+"/view");
+    }
+  })
+})
 
 
+app.delete("/manager/proddetails/:id/delete",managerAuth,(req,res)=>{
+  con.query("Delete from product where p_id=?",
+  [req.params.id],(e,results)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/manager/proddetails");
+    }
+  })
+})
+
+app.patch("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
+  con.query("Update supplier set su_name=?,su_mobileno=?,su_email=?,su_address=? where su_id=?",
+  [req.body.name,Number(req.body.mobileno),req.body.email,req.body.address,req.params.id],async (err,result)=>{
+    if(err) console.log(err);
+    else{
+      if(req.body.username){
+          const hash = await bcrypt.hash(req.body.password,10);
+          con.query("Update suplogin set username=?,password=? where su_id=?",[req.body.username,hash,req.params.id],(e,r)=>{
+            if(e) console.log(e);
+            else{
+             console.log("updated!")
+            }
+          })
+      }
+      res.redirect("/manager/supdetails/"+req.params.id+"/view");
+    }
+  })
+})
+
+
+app.delete("/manager/supdetails/:id/delete",managerAuth,(req,res)=>{
+ con.query(`Delete from supplier where su_id=${req.params.id}`,(e,result)=>{
+   res.redirect("/manager/supdetails");
+ })
+})
+
+app.post("/manager/opentender",(req,res)=>{
+  con.query("insert into tenders(t_name,t_opentime,t_closetime,t_status) values(?)",
+  [[req.body.name,req.body.sd+" "+req.body.st+":00",req.body.ed+" "+req.body.et+":00","upcoming"]],(e,results)=>{
+      if(e) console.log(e);
+      else{
+        let tid=results.insertId;
+        let array=[];
+        for(let x in req.body.products){
+          array[x]=[tid,Number(req.body.products[x])];
+        }
+        con.query("insert into t_products(t_id,p_id) values ?",[array],(error,result)=>{
+          if(error) console.log(error);
+          else{
+            con.query("select su_email,su_name from supplier",async (er,suppliers)=>{
+              if(er) console.log(er);
+              else{
+                for(x in suppliers){
+                  await client.sendEmail({
+                    From:process.env.FROM_EMAIL,
+                    To:suppliers[x].su_email,
+                    Body:"A tender has been opened",
+                    HtmlBody:`Hi! ${suppliers[x].su_name}, we have opened a tender.
+                    It will start at ${req.body.sd+" "+req.body.st} and will end at ${req.body.ed+" "+req.body.et}`
+                  });
+                }
+                res.redirect("/manager/tender/details")
+              }
+            })
+            
+          }
+        })
+        
+
+                //con.query("insert into(t_name,t_opentime,t_closetime,t_status) values(?)",
+      }
+  })
+})
+
+
+app.patch("/manager/tender/:id/results",async (req,res)=>{
+  const id= Number(req.params.id);
+  const pid = Number(req.body.product);
+  const sid = Number(req.body.supplier);
+  const cost = Number(req.body.cost);
+  console.log(req.body)
+  try{
+    console.log("e1")
+   const product = await new Promise((resolve,reject)=>{
+      con.query("Select * from product left join supplier on supplier.su_id=product.su_id where p_id=?",[pid],async (e,p)=>{
+        if(e) reject(e);
+        else{
+          if(p[0].su_id){
+            await client.sendEmail({
+              To:p[0].su_email,
+              From:process.env.FROM_EMAIL,
+              Subject:"Discontinue the contract",
+              HtmlBody:`<h4>We are sorry for discontinuing the contract of the supply of the product ${p[0].p_name}</h4>`
+            })
+          }
+          resolve(p[0]);
+        }
+    })
+  });
+  console.log("e1")
+  await new Promise((resolve,reject)=>{
+    con.query("Update product set su_id=?,pc_perunit=? where p_id=?",[sid,cost,pid],(err,result)=>{
+      if(err) reject(err);
+      else{
+        con.query("Select su_email from  supplier where su_id=?",[sid],async(erro,email)=>{
+          if(erro) reject(erro);
+          else{
+            await client.sendEmail({
+              To:email[0].su_email,
+              From:process.env.FROM_EMAIL,
+              Subject:"Signing the contract",
+              HtmlBody:`<h4>Congratulations!! You have won the tender for the supply of the product ${product.p_name}</h4>.`
+            });
+            resolve(1);
+          }
+        })
+        }
+      });
+    });
+    console.log("e1")
+  res.redirect("back");
+  }catch(e){
+    console.log(e);
+  }
+})
+
+app.patch("/manager/tender/:id/submit",(req,res)=>{
+    con.query("Update tenders set t_status='selected' where t_id=?",[Number(req.params.id)],(er,t)=>{
+      if(er) console.log(er)
+      else{
+        res.redirect("back")
+      }
+    });
+})
 
 /////////////////////////////////////////////////////inventory routes
 
@@ -432,10 +743,95 @@ app.post("/manager/addsup/single",(req,res)=>{
 // });
 
 
-//////////////////////////////////////////////////////admin routes
+//////////////////////////////////////////////////////supplier routes
+//////get routes
+app.get("/supplier/tenders",supplierAuth,(req,res)=>{
+  con.query("select * from tenders where t_id not in (select t_id from t_supplier where su_id = ?)",[req.session.user.sid],(error,tenders)=>{
+    if(error) console.log(error);
+    else{
+      res.render("suptenderdet",{tenders});
+    }
+  })
+})
+
+app.get("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
+      con.query("select p_id,t_id,t_name,t_closetime,t_status,p_name,p_mrp from (select * from tenders where t_id=?) as tender natural join t_products natural join product",
+      [Number(req.params.id)],(e,tender)=>{
+        if(e) console.log(e);
+        else{
+          console.log(tender)
+         if(tender[0].t_status=="open"){
+          res.render("supparticipate",{tender});
+         }
+        }
+})
+});
+
+app.get("/supplier/tenders/participated",supplierAuth,(req,res)=>{
+  con.query("select * from tenders where t_id in (select t_id from t_supplier where su_id =?)",[req.session.user.sid],
+  (error,tenders)=>{
+    if(error) console.log(error);
+    else{
+      res.render("suptenderpart",{tenders});
+    }
+  })
+})
+
+app.get("/supplier/tenders/:id/details",supplierAuth,(req,res)=>{
+        con.query("select * from (Select t_id,ternary.su_id,cost,p_mrp,p_name from ternary inner join product on ternary.p_id=product.p_id) as tender natural join tenders where t_id=? and su_id = ?",[Number(req.params.id),Number(req.session.user.sid)],
+        (error,responses)=>{
+            if(error) console.log(error);
+            else{
+                console.log(responses)
+                res.render("suptender",{responses});
+            }
+        })
+})
 
 
-/////////////////////////////////////////////////////////manaager routes
+app.get("/supplier/tenders/:id/results",supplierAuth,(req,res)=>{
+ con.query("Select * from t_products natural join product where t_id=?",[Number(req.params.id)],(e,product)=>{{
+   if(e) console.log(e);
+   else{
+     con.query("Select * from t_supplier where su_id=?",[req.session.user.sid],(error,check)=>{
+      if(error) console.log(error);
+      else{
+        console.log(check)
+        res.render("suptresults",{sid:req.session.user.sid,product,check});
+      }
+
+     })
+     
+   }
+ }})
+});
+////////////////post routes
+app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
+
+  const keys = Object.keys(req.body.p);        //if we give p[integers] then surely they become an arrya if they are continuous itnegersl
+  const values = Object.values(req.body.p); 
+  const su_id = Number(req.session.user.sid);
+  let array=[];
+  for(x in keys){
+    array[x]=[Number(req.params.id),su_id,Number(keys[x].substring(1)),Number(values[x])];
+  }
+  console.log(array);
+  con.query("insert into t_supplier(t_id,su_id) values(?)",[[Number(req.params.id),su_id]],(error,result)=>{
+    if(error) console.log(error)
+    else{
+      con.query("Insert into ternary(t_id,su_id,p_id,cost) values ?",[array],(e,placed)=>{
+        if(e) console.log(e);
+        else{
+          res.redirect("/supplier/tenders");
+        }
+      })
+    }
+   
+  })
+ 
+
+});
+/////////////////////////////////////////////////////////manager routes
 
 
 
@@ -447,19 +843,58 @@ app.post("/manager/addsup/single",(req,res)=>{
 
 ///////////////////////////////////////////////////////billing routes
 
+
+
+
+//////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////middlewares
   function adminAuth(req,res,next){
     if(req.session.user!=undefined && req.session.user.role=="admin") next();
-    else  res.redirect("/login");
+    else res.redirect("/login");
   }
 
   function managerAuth(req,res,next){
     if(req.session.user!=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin"))  next();
     else res.redirect("/login")
   }
+
+  function supplierAuth(req,res,next){
+    if(req.session.user!=undefined && req.session.user.role=="supplier") next();
+    else res.redirect("/supplier/login")
+    
+  }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
 
-
+function checking(){
+  let now;
+  setInterval(()=>{
+   con.query("Select t_id,t_opentime,t_closetime,t_status from tenders",(e,tenders)=>{
+     if(e) console.log(e);
+     else{
+       now = Date.now();
+       for(let x in tenders){
+         if(new Date(tenders[x].t_opentime).getTime()<=now && now<new Date(tenders[x].t_closetime) && tenders[x].t_status!="open"){
+           con.query(`Update tenders set t_status='open' where t_id=${tenders[x].t_id}`,(error,tender)=>{
+             if(error) console.log(error);
+             else{
+               console.log("opened!!!");
+             }
+           })
+         }
+         if(now>new Date(tenders[x].t_closetime) && tenders[x].t_status!="closed" && tenders[x].t_status!="selected"){
+          con.query(`Update tenders set t_status='closed' where t_id=${tenders[x].t_id} `,(error,tender)=>{
+            if(error) console.log(error);
+            else{
+              console.log("closed!!!");
+            }
+          })
+         }
+       }
+     }
+   })
+  },2000)
+}
 
 
 

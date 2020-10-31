@@ -50,7 +50,7 @@ su_address varchar(100) not null,
 su_email varchar(30) not null unique,
 su_mobileno bigint not null unique
 );
-
+-- drop table supplier;
 
 create table suplogin(
 username varchar(20) not null unique,
@@ -58,7 +58,7 @@ password varchar(500) not null,
 su_id int,
 foreign key(su_id) references supplier(su_id) on delete cascade
 );
--- drop table supplier;
+-- drop table suplogin;
 
 create table product(
  p_id int auto_increment primary key,
@@ -66,9 +66,10 @@ create table product(
  p_mrp float not null, 
  date_added timestamp not null default now(),
  min_qty int not null,
- stock_avail int not null,
+ stock_avail int not null default 0,
  su_id int,
- foreign key (su_id) references supplier(su_id) on delete cascade
+ pc_perunit float,
+ foreign key (su_id) references supplier(su_id)
  
 );
 
@@ -127,7 +128,48 @@ foreign key (p_id) references product(p_id)
 -- show create table departments;
 
 
-create table discounts(
-discount float not null,
-date_modified 
-);
+-- create table discounts(
+-- discount float not null,
+-- date_modified 
+-- );
+
+create table tenders(
+t_id int auto_increment primary key,
+t_name varchar(50) not null,
+t_opentime timestamp not null,
+t_closetime timestamp not null,
+t_status varchar(15) not null,
+t_created timestamp default now(),
+check(t_status="open" or t_status="closed" or t_status="upcoming" or t_status="selected"));
+
+-- drop table tenders;
+
+create table t_products(
+ p_id int not null,
+ t_id int not null,
+ foreign key(p_id) references product(p_id) on delete cascade,
+ foreign key(t_id) references tenders(t_id) on delete cascade);
+ 
+--  drop table t_products;
+ 
+ create table t_supplier(
+ t_id int not null,
+ su_id int not null,
+ foreign key(t_id) references tenders(t_id) on delete cascade,
+ foreign key(su_id) references supplier(su_id) on delete cascade
+ );
+ 
+--   drop table t_supplier;
+  
+ create table ternary(
+ t_id int not null,
+ su_id int not null,
+ p_id int not null,
+ cost float not null,
+ foreign key(t_id) references tenders(t_id) on delete cascade,
+ foreign key(su_id) references supplier(su_id) on delete cascade,
+  foreign key(p_id) references product(p_id) on delete cascade);
+ 
+--  drop table ternary;
+ 
+ 
