@@ -10,11 +10,19 @@ const fs=require("fs");
 const methodOverride = require("method-override");
 const postmark = require("postmark");
 const dotenv = require("dotenv");
+const otpGenerator = require("otp-generator");
 dotenv.config();
 checking();
 
 // Send an email:
-var client = new postmark.ServerClient(process.env.SERVER_KEY);
+var serverClient = new postmark.ServerClient(process.env.SERVER_KEY);
+
+
+//send message
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require('twilio')(accountSid, authToken);
+//to phone number always in +[countrycode][number] format !
 
 
 app.use(session({
@@ -96,7 +104,8 @@ app.post("/login",(req,res)=>{
                 role:results[0].d_name
               };
               if(results[0].d_name=="admin") res.redirect("/admin");
-              else if(results[0].d_name=="managing") res.redirect("/manager")
+              else if(results[0].d_name=="managing") res.redirect("/manager");
+              else if(results[0].d_name=="billing") res.redirect("/billing");
 
             })
 
@@ -502,7 +511,7 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
           })
         })
         .then(result=>{
-          client.sendEmail({
+          serverClient.sendEmail({
             "From": "vishal@kaloory.com",
             "To": email,
             "subject":"Credentials for Dope Market Tender account",
@@ -638,7 +647,7 @@ app.post("/manager/opentender",(req,res)=>{
               if(er) console.log(er);
               else{
                 for(x in suppliers){
-                  await client.sendEmail({
+                  await serverClient.sendEmail({
                     From:process.env.FROM_EMAIL,
                     To:suppliers[x].su_email,
                     Body:"A tender has been opened",
@@ -673,7 +682,7 @@ app.patch("/manager/tender/:id/results",async (req,res)=>{
         if(e) reject(e);
         else{
           if(p[0].su_id){
-            await client.sendEmail({
+            await serverClient.sendEmail({
               To:p[0].su_email,
               From:process.env.FROM_EMAIL,
               Subject:"Discontinue the contract",
@@ -692,7 +701,7 @@ app.patch("/manager/tender/:id/results",async (req,res)=>{
         con.query("Select su_email from  supplier where su_id=?",[sid],async(erro,email)=>{
           if(erro) reject(erro);
           else{
-            await client.sendEmail({
+            await serverClient.sendEmail({
               To:email[0].su_email,
               From:process.env.FROM_EMAIL,
               Subject:"Signing the contract",
@@ -720,12 +729,97 @@ app.patch("/manager/tender/:id/submit",(req,res)=>{
     });
 })
 
-/////////////////////////////////////////////////////inventory routes
+/////////////////////////////////////////////////////billing routes
+
+
+/////get routes
+app.get("/billing",billingAuth,(req,res)=>{
+  res.render("billindex");
+})
+
+app.get("/billing/newcustomer",(req,res)=>{
+  res.render("newcustomer");
+})
+
+app.get("/billing/newcustomer/:id/verify",(req,res)=>{
+  con.query("Select c_mobileno from customer where c_id= ?",[Number(req.params.id)],(error,result)=>{
+    if(error) console.log(error);
+    else{
+      //console.log(result)
+      res.render("verify",{mobile:result[0].c_mobileno,id:req.params.id});
+    }
+  })
+})
+
+app.get("/billing/newbill",(req,res)=>{
+  
+    res.render("newbill");
+})
+////////post routes
+app.post("/billing/newcustomer",async (req,res)=>{
+  const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false,alphabets:false });
+  //console.log("request",req.body)
+  //console.log(typeof req.body.c[4]);
+  req.body.c[4]=Number(req.body.c[4]);
+  req.body.c[3]=Number(req.body.c[3]);
+  req.body.c[5]=Number(otp);
+   con.query("insert into customer(c_name,c_gender,c_address,c_age,c_mobileno,c_otp) values(?)",
+  [req.body.c],async(error,result)=>{
+    if(error) console.log(error);
+    else{
+      const id=result.insertId;
+     
+      const number = Number(req.body.c[4]);
+      try{
+        const response = await client.messages.create({
+          from:`+12565105586`,
+          to:`+91${req.body.c[4]}`,                                          //sending out only indian numbers!! so country code is fixed!
+          body:`VERIFICATION OTP:${otp} `
+        })
+      }catch(e){
+        return console.log(e);
+      }
+      res.redirect(`/billing/newcustomer/${id}/verify`);
+      
+    }
+  })
+});
+
+app.post("/billing/newcustomer/:id/verify",(req,res)=>{
+  con.query("Select c_otp from customer where c_id=?",[Number(req.params.id)],(e,result)=>{
+   // console.log(Number(req.body.key),Number(result[0].c_otp))
+     if(Number(req.body.key)!=Number(result[0].c_otp)) res.redirect("back");
+     else{
+       res.redirect("/billing/newbill");
+     }
+  })
+})
+
+app.patch("/billing/newcustomer/:id/change",(req,res)=>{
+  const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false,alphabets:false });
+  con.query("Update customer set c_mobileno=?,c_otp=? where c_id=?",[Number(req.body.mobile),otp,Number(req.params.id)],async (err,result)=>{
+    if(err) console.log(err);
+    else{
+      try{
+      
+        const response = await client.messages.create({
+          from:`+12565105586`,
+          to:`+91${req.body.mobile}`,                                          //sending out only indian numbers!! so country code is fixed!
+          body:`VERIFICATION OTP:${otp} `
+        })
+       // console.log(response)
+      }catch(e){
+       // console.log(otp)
+        return console.log(e);
+      }
+      res.redirect(`/billing/newcustomer/${req.params.id}/verify`);
+    }
+  })
+})
 
 
 
-
-///////////////////////////////////////////////////////billing routes
+///////////////////////////////////////////////////////inventory routes
 
 
 // app.post("/register",(req,res)=>{
@@ -831,17 +925,13 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
  
 
 });
-/////////////////////////////////////////////////////////manager routes
 
 
 
 
-/////////////////////////////////////////////////////inventory routes
 
 
-
-
-///////////////////////////////////////////////////////billing routes
+///////////////////////////////////////////////////////inventory routes
 
 
 
@@ -863,6 +953,11 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
     if(req.session.user!=undefined && req.session.user.role=="supplier") next();
     else res.redirect("/supplier/login")
     
+  }
+
+  function billingAuth(req,res,next){
+    if(req.session.user.role!=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin" || req.session.user.role=="billing" )) next();
+    else res.redirect("/login")
   }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
 

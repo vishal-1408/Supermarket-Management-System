@@ -1,0 +1,31 @@
+<%-include("partials/header.ejs")%>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-link active" href="/billing">Home <span class="sr-only">(current)</span></a>
+      <!-- <a class="nav-link" href="/admin/transactions">Transactions</a> -->
+    </div>
+    <div class="navbar-nav">
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-5">
+    <div class="row my-5">
+        <div class="col-md-4 my-5">
+            <a href="/billing/newcustomer" class="btn btn-outline-success">NEW CUSTOMER</a>
+        </div>
+        <div class="col-md-4 my-5">
+            <a href="/billing/oldcustomer" class="btn btn-outline-primary">OLD CUSTOMER</a>
+        </div>
+        <div class="col-md-4 my-5">
+            <a href="/billing/customer" class="btn btn-outline-danger">ANONYMUS CUSTOMER</a>
+        </div>
+    </div>
+</div>
+<%-include("partials/footer.ejs")%>

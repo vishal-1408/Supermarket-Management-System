@@ -16,7 +16,7 @@ select * from ternary group by p_id order by cost desc;
 insert into ternary(t_id,su_id,p_id,cost) values(1,8,1,25);
 delete from ternary where t_id=1;
 insert into t_supplier(t_id,su_id) values(1,7);
-delete from t_supplier where t_id=1;
+delete from t_supplier where su_id=7;
 
 truncate table tenders;
 
