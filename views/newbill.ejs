@@ -1,0 +1,183 @@
+<%-include("partials/header.ejs")%>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-link active" href="/billing">Home <span class="sr-only">(current)</span></a>
+      <!-- <a class="nav-link" href="/admin/transactions">Transactions</a> -->
+    </div>
+    <div class="navbar-nav">
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+<div style="display:none;" id="none" data="<%=JSON.stringify(products)%>">
+
+</div>
+ <div class="container-fluid my-5">
+     <div class="row">
+         <div class="col-md-4 container-fluid border">
+           <div class="row col-md-12 text-center">
+            <h5>ADD PRODUCTS</h5>
+           </div>
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" id="p"  placeholder="product">
+                </div>
+                <div class="col-md-5">
+                    <input type="number" id="q" placeholder="quantity">
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-outline-success" id="add">ADD</button>
+                </div>
+            </div>
+            <!-- <div class="row" style="display:none" id="display"> -->
+                <div  class="row col-md-5" id="display" style="box-shadow:1px 1px 10px rgba(0,0,0,0.6);position:relative;top:-8px;">
+            </div>
+            <!-- <div class="row">
+                <div class="co-md-12">
+                    <div id="products"></div>
+                </div>
+            </div> -->
+         </div>
+         <div class="col-md-8 container" style="height:500px;">
+            <h1 class="text-center">BILL</h1>
+            <div class="row">
+                <div class="col-md-1">SL. NO.</div>
+                <div class="col-md-4">PRODUCT NAME</div>
+                <div class="col-md-2">QUANTITY</div>
+                <div class="col-md-2">PRICE PER UNIT</div>
+                <div class="col-md-1">TOTAL</div>
+                <div class="col-md-1">OPERATION</div>
+            </div>
+            <form action="/billing/newbill" method="post" style="height:71%;">
+                <div id="main" style="overflow: scroll;height:60%;margin: 0;">
+                </div>
+                <div class="row border px-5">
+                   <div class="col-md-8 text-center mx-5">
+                       <div class="row form-group" >
+                           <label for="amount">Amount</label>
+                           <input type="number" step="any" name="amount" id="amount" class="form-control" disabled value="0">
+                       </div>
+                       <div class="row">
+                        <h5>Credits Used: <span id="credits">0</span></h5>
+                    </div>
+                    <div class="row form-group">
+                        <label for="famount">Final Amount</label>
+                        <input type="number" step="any" name="famount" id="famount"  class="form-control" disabled value="0">
+                    </div>
+                   </div>
+                </div>
+               <div class="text-center">
+                <button class="btn btn-outline-success">SUBMIT</button>
+               </div>
+            </form>
+         </div>
+     </div>
+ </div>
+
+ <script>
+ const products = JSON.parse($("#none").attr("data"));
+ console.log(products);
+ const pinput = $("#p");
+ const display = $("#display");
+ const quantity = $("#q");
+ const add = $("#add");
+ const main = $("#main");
+ const amount = $("#amount");
+ const famount = $("#famount");
+ pinput.keyup((e)=>{
+    let a = pinput.val();
+    if(a==""){
+        display.css("display","none");
+    }else{
+    let i=0;
+    display.html("");
+    for(x in products){
+       if(products[x].p_name.indexOf(a)!=-1){
+           i+=1;
+           display.append(createRow(products[x]));
+       }
+    }
+        display.css("display","block");
+    }
+    });
+
+$("#display").on("click",".hover",(e)=>{
+    console.log("CALLED")
+   let element = e.target;
+   console.log(element);
+  console.log(element.textContent)
+   pinput.val(element.textContent);
+   pinput.attr("data-product",element.getAttribute("data-product"))
+   display.css("display","none");
+   console.log(Number(element.getAttribute("data")))
+   quantity.attr("max",Number(element.getAttribute("data")))
+
+
+})
+
+main.on("click",".delete",(e)=>{
+    const value = Number(e.target.getAttribute("data-total"));
+    let parent = e.target.parentNode.parentNode;
+    parent.remove();
+    amount.val(Number(amount.val()-value)); //adding to amount!!!
+    famount.val(Number(famount.val()-value));
+})
+
+
+add.on("click",(e)=>{
+    if(quantity.val()<=quantity.attr("max") || true){
+    const product = JSON.parse(pinput.attr("data-product"));
+    pinput.val("");
+    createItem(product,quantity.val());
+    amount.val(Number(amount.val()+(product.pc_perunit*quantity.val()))); //adding to amount!!!
+    famount.val(Number(famount.val()+(product.pc_perunit*quantity.val())));
+    quantity.val("");
+    }
+ 
+})
+
+
+
+function createRow(p){
+ const div = document.createElement("div");
+ div.classList.add("col-md-6");
+ div.innerHTML=p.p_name;
+ div.setAttribute("data",p.stock_avail);
+ div.classList.add("hover")
+ div.setAttribute("data-product",JSON.stringify(p))
+ return div;
+}
+
+function createItem(p,q){ 
+   let row = document.createElement("div");
+   index = main.children().length;
+   row.classList.add("row");
+   row.innerHTML=`
+   <div class="col-md-1">${index}</div>
+   <div class="col-md-4">
+    <input disabled type="text" name='p[${p.p_id}]' value='${q}'> 
+    </div>
+   <div class="col-md-2">
+    <input type="number" max="${p.stock_avail}" value='${q}' style="width:100%;">
+    </div>
+   <div class="col-md-2">${p.pc_perunit}</div>
+   <div class="col-md-1">${p.pc_perunit*q}</div>
+   <div class="col-md-1">
+    <button class="btn btn-outline-danger delete" data-total="${p.pc_perunit*q}">DELETE</button>
+    </div>
+
+   `
+   main.append(row);
+
+}
+
+
+
+
+ </script>
+  <%-include("partials/footer.ejs")%>

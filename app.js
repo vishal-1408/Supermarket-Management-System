@@ -737,11 +737,11 @@ app.get("/billing",billingAuth,(req,res)=>{
   res.render("billindex");
 })
 
-app.get("/billing/newcustomer",(req,res)=>{
+app.get("/billing/newcustomer",billingAuth,(req,res)=>{
   res.render("newcustomer");
 })
 
-app.get("/billing/newcustomer/:id/verify",(req,res)=>{
+app.get("/billing/newcustomer/:id/verify",billingAuth,(req,res)=>{
   con.query("Select c_mobileno from customer where c_id= ?",[Number(req.params.id)],(error,result)=>{
     if(error) console.log(error);
     else{
@@ -751,12 +751,88 @@ app.get("/billing/newcustomer/:id/verify",(req,res)=>{
   })
 })
 
-app.get("/billing/newbill",(req,res)=>{
-  
-    res.render("newbill");
+
+
+app.get("/billing/oldcustomer/:id/verify",billingAuth,(req,res)=>{
+  res.render("oldcust",{id:req.params.id});
 })
+
+app.get("/billing/newbill",(req,res)=>{
+  con.query("select * from product",(error,products)=>{
+    if(error) console.log(error);
+    else{
+      res.render("newbill",{products});
+    }
+  })
+
+ 
+})
+
+app.get("/billing/newbill/:id",(req,res)=>{
+  con.query("select * from product",(error,products)=>{
+    if(error) console.log(error);
+    else{
+     con.query("Select * from customer where c_id=?",[Number(req.params.id)],(e,customer)=>{
+       if(e) console.log(e);
+       else{
+         console.log(products)
+        res.render("newbill",{products,customer});
+       }
+     })
+    }
+  })
+
+})
+
+
+
+
+
 ////////post routes
-app.post("/billing/newcustomer",async (req,res)=>{
+
+app.post("/billing",billingAuth,(req,res)=>{
+  const otp = otpGenerator.generate(6,{alphabets:false,upperCase: false, specialChars: false});
+  con.query("update customer set c_otp=? where c_mobileno=?",[otp,Number(req.body.mobile)],async (e,result)=>{
+    if(e) console.log(e);
+    else{
+      if(result.affectedRows!=0){
+        try{
+          await client.messages.create({from:"+12565105586",to:`+91${req.body.mobile}`,body:`VERIFICATION OTP is ${otp}`});
+         con.query("Select c_id from customer where c_mobileno=?",[Number(req.body.mobile)],async (error,result2)=>{
+           if(error) console.log(error);
+           else{
+              res.redirect(`/billing/oldcustomer/${result2[0].c_id}/verify`);
+           }
+         })
+        }catch(e){
+          console.log(e);
+          res.redirect("back");
+        }
+      
+        
+      }else{
+        res.redirect("back");
+      }
+      
+    }
+  })
+})
+
+
+
+app.post("/billing/oldcustomer/:id/verify",billingAuth,(req,res)=>{
+  con.query("select c_otp from customer where c_id=?",[Number(req.params.id)],(e,result)=>{
+    if(e) console.log(e);
+    else{
+      if(result[0].c_otp==req.body.key) res.redirect("/billing/newbill")
+      else {
+        console.log("wrong key!")
+        res.redirect("back")
+      }
+    }
+  })
+})
+app.post("/billing/newcustomer",billingAuth,async (req,res)=>{
   const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false,alphabets:false });
   //console.log("request",req.body)
   //console.log(typeof req.body.c[4]);
@@ -785,17 +861,17 @@ app.post("/billing/newcustomer",async (req,res)=>{
   })
 });
 
-app.post("/billing/newcustomer/:id/verify",(req,res)=>{
+app.post("/billing/newcustomer/:id/verify",billingAuth,(req,res)=>{
   con.query("Select c_otp from customer where c_id=?",[Number(req.params.id)],(e,result)=>{
    // console.log(Number(req.body.key),Number(result[0].c_otp))
      if(Number(req.body.key)!=Number(result[0].c_otp)) res.redirect("back");
      else{
-       res.redirect("/billing/newbill");
+       res.redirect(`/billing/newbill/${req.params.id}`);
      }
   })
 })
 
-app.patch("/billing/newcustomer/:id/change",(req,res)=>{
+app.patch("/billing/newcustomer/:id/change",billingAuth,(req,res)=>{
   const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false,alphabets:false });
   con.query("Update customer set c_mobileno=?,c_otp=? where c_id=?",[Number(req.body.mobile),otp,Number(req.params.id)],async (err,result)=>{
     if(err) console.log(err);
@@ -817,6 +893,9 @@ app.patch("/billing/newcustomer/:id/change",(req,res)=>{
   })
 })
 
+app.post("/billing/newbill",(req,res)=>{
+  console.log(req);
+})
 
 
 ///////////////////////////////////////////////////////inventory routes
@@ -956,7 +1035,7 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
   }
 
   function billingAuth(req,res,next){
-    if(req.session.user.role!=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin" || req.session.user.role=="billing" )) next();
+    if(req.session.user !=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin" || req.session.user.role=="billing" )) next();
     else res.redirect("/login")
   }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin
