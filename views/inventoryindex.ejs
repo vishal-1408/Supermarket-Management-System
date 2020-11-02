@@ -1,0 +1,70 @@
+<%-include("partials/header.ejs")%>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-link active" href="/inventory">Home <span class="sr-only">(current)</span></a>
+      <a class="nav-link" href="/inventory/ordered">PENDING ORDERS</a>
+      <!-- <a class="nav-link" href="/admin/transactions">Transactions</a> -->
+    </div>
+    <div class="navbar-nav">
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-5">
+    <h2 class="text-center my-5"> PRODUCTS WITH LOW QUANTITY</h2>
+    <%if(products.length==0){%>
+        <h5 class="text-center my-5">NO PRODUCTS!!!</h5>
+    <%}else{%>
+        <div class="row my-2">
+            <div class="col-md-3">
+                <h6>PRODUCT NAME</h6>
+            </div>
+            <div class="col-md-2">
+               <h6>PRODUCT STOCKAVAIL</h6>
+           </div>
+           <div class="col-md-1">
+               <h6>MIN. QTY.</h6>
+           </div>
+           <div class="col-md-4">
+               <h6>QTY. ORDER</h6>
+           </div>
+           <div class="col-md-2">
+              
+           </div>
+        </div>
+        <hr>
+        <% for(x in products){%>
+            <form action="/inventory" method="post">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h4><%=products[x].p_name%></h4>
+                    </div>
+                    <div class="col-md-2">
+                       <h4><%=products[x].stock_avail%></h4>
+                   </div>
+                   <div class="col-md-1">
+                       <h4><%=products[x].min_qty%></h4>
+                   </div>
+                   <div class="col-md-4">
+                       <input type="number" min="<%=products[x].min_qty%>" name="<%=products[x].p_id%>">
+                   </div>
+                   <div class="col-md-2">
+                       <button class="btn btn-outlint-success">ORDER</button>
+                   </div>
+                </div>
+               </form>
+            <%}%>
+    <%}%>
+    
+   
+</div>
+
+
+
+<%-include("partials/footer.ejs")%>

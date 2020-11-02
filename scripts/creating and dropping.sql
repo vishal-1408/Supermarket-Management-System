@@ -79,11 +79,11 @@ create table customer(
 c_id int auto_increment primary key,
 c_name varchar(30) not null,
 c_gender varchar(1) not null,
-date_visited timestamp not null,
+date_visited timestamp not null default now(),
 c_address varchar(100) not null,
 c_mobileno bigint not null unique,
 c_age int not null,
-c_pts float not null
+c_pts float not null default 0.00
 );
 
 -- drop table customer;
@@ -172,4 +172,11 @@ create table t_products(
  
 --  drop table ternary;
  
- 
+ create table transaction_prod(
+ t_id int not null,
+ p_id int not null,
+ quantity int not null,
+ foreign key (p_id) references product(p_id) on delete cascade,
+ foreign key(t_id) references transaction(t_id) on delete cascade
+ )
+-- drop table transaction_prod
