@@ -172,4 +172,11 @@ create table t_products(
  
 --  drop table ternary;
  
- 
+ create table transaction_prod(
+ t_id int not null,
+ p_id int not null,
+ quantity int not null,
+ foreign key (p_id) references product(p_id) on delete cascade,
+ foreign key(t_id) references transaction(t_id) on delete cascade
+ )
+-- drop table transaction_prod

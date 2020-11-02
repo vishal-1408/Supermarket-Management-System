@@ -11,6 +11,7 @@ const methodOverride = require("method-override");
 const postmark = require("postmark");
 const dotenv = require("dotenv");
 const otpGenerator = require("otp-generator");
+const { promiseImpl } = require("ejs");
 dotenv.config();
 checking();
 
@@ -106,7 +107,7 @@ app.post("/login",(req,res)=>{
               if(results[0].d_name=="admin") res.redirect("/admin");
               else if(results[0].d_name=="managing") res.redirect("/manager");
               else if(results[0].d_name=="billing") res.redirect("/billing");
-
+              else if(results[0].d_name=="inventory") res.redirect("/inventory");
             })
 
           }else{
@@ -487,7 +488,7 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
         if(err) {
           reject(err)
         }else{
-          console.log(result)
+          //console.log(result)
           resolve(result.insertId);
         // con.query("Select last_insert_id()",(e,id)=>{
         //    if(e) {
@@ -674,7 +675,7 @@ app.patch("/manager/tender/:id/results",async (req,res)=>{
   const pid = Number(req.body.product);
   const sid = Number(req.body.supplier);
   const cost = Number(req.body.cost);
-  console.log(req.body)
+  //console.log(req.body)
   try{
     console.log("e1")
    const product = await new Promise((resolve,reject)=>{
@@ -713,7 +714,7 @@ app.patch("/manager/tender/:id/results",async (req,res)=>{
         }
       });
     });
-    console.log("e1")
+   // console.log("e1")
   res.redirect("back");
   }catch(e){
     console.log(e);
@@ -757,7 +758,7 @@ app.get("/billing/oldcustomer/:id/verify",billingAuth,(req,res)=>{
   res.render("oldcust",{id:req.params.id});
 })
 
-app.get("/billing/newbill",(req,res)=>{
+app.get("/billing/newbill",billingAuth,(req,res)=>{
   con.query("select * from product",(error,products)=>{
     if(error) console.log(error);
     else{
@@ -768,15 +769,15 @@ app.get("/billing/newbill",(req,res)=>{
  
 })
 
-app.get("/billing/newbill/:id",(req,res)=>{
-  con.query("select * from product",(error,products)=>{
+app.get("/billing/newbill/:id",billingAuth,(req,res)=>{
+  con.query("select * from product ",(error,products)=>{
     if(error) console.log(error);
     else{
      con.query("Select * from customer where c_id=?",[Number(req.params.id)],(e,customer)=>{
        if(e) console.log(e);
        else{
-         console.log(products)
-        res.render("newbill",{products,customer});
+        // console.log(products)
+        res.render("newbillcust",{products,customer:customer[0]});
        }
      })
     }
@@ -824,9 +825,9 @@ app.post("/billing/oldcustomer/:id/verify",billingAuth,(req,res)=>{
   con.query("select c_otp from customer where c_id=?",[Number(req.params.id)],(e,result)=>{
     if(e) console.log(e);
     else{
-      if(result[0].c_otp==req.body.key) res.redirect("/billing/newbill")
+      if(result[0].c_otp==req.body.key) res.redirect(`/billing/newbill/${req.params.id}`)
       else {
-        console.log("wrong key!")
+       // console.log("wrong key!")
         res.redirect("back")
       }
     }
@@ -893,12 +894,191 @@ app.patch("/billing/newcustomer/:id/change",billingAuth,(req,res)=>{
   })
 })
 
-app.post("/billing/newbill",(req,res)=>{
-  console.log(req);
+app.post("/billing/newbill",billingAuth ,async (req,res)=>{
+  const userid=req.session.user.empid;
+  //console.log(req.body);
+  let productids=[];
+  for(x in  Object.keys(req.body.p)){
+   productids[x]=Number(Object.keys(req.body.p)[x].substring(1))
+  }
+
+  const productqtys = Object.values(req.body.q);
+  console.log("pids",productids);
+  console.log("pqty",productqtys)
+ const amount = Number(req.body.amount);
+ const famount = Number(req.body.famount);
+ const mop = req.body.mop;
+ 
+ try{
+let array2=[];
+ let productstockavail=await new Promise((resolve,reject)=>{
+  con.query("Select * from product where p_id in(?)",[productids],async(e,result)=>{
+    if(e) reject(e);
+    else{
+      for(x in result){
+        array2[x]=result[x].stock_avail;
+        if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
+          await new Promise((rs,rj)=>{
+            con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
+              if(er) rj(er);
+              else{
+                resolve(r);
+              }
+            })
+          })
+        }
+      }
+      resolve(array2);
+     }
+  })
 })
 
+    const id = await new Promise((resolve,reject)=>{
+      con.query("insert into transaction(final_amt,billed_amt,mop,emp_id) values(?)",[[famount,amount,mop,userid]],(e,result)=>{
+        if(e) reject(e);
+        else{
+          const id = result.insertId;
+          resolve(id);
+        }
+      })
+    })
+    await new Promise((resolve,reject)=>{
+      let array=[];
+      for(x in productids){
+        array[x]=[id,Number(productids[x]),Number(productqtys[x])];
+        console.log(array[x])
+      }
+      con.query("insert into transaction_prod(t_id,p_id,quantity) values ?",[array],(error,result)=>{
+        if(error) reject(error);
+        else{
+          resolve(result);
+        }
+      })
+    })
 
-///////////////////////////////////////////////////////inventory routes
+    await new Promise(async (resolve,reject)=>{
+      for(x in productids){
+        await new Promise((re,rj)=>{
+          con.query("Update product set stock_avail=? where p_id=?",[Number(productstockavail[x])-Number(productqtys[x]),Number(productids[x])],(e,result)=>{
+            if(e) rj(e);
+            re(1);
+          })
+        })
+      }
+      resolve(1);
+    })
+    res.redirect("/billing");
+  }catch(e){
+    console.log(e);
+    res.redirect("back");
+  }
+  
+
+});
+
+
+app.post("/billing/newbill/:id",billingAuth ,async (req,res)=>{
+  const userid=req.session.user.empid;
+ // console.log(req.body);
+  let productids=[];
+  for(x in  Object.keys(req.body.p)){
+   productids[x]=Number(Object.keys(req.body.p)[x].substring(1))
+  }
+ // console.log("productods",productids)
+  const productqtys = Object.values(req.body.q);
+ // console.log("productqtys",productqtys)
+  const amount = Number(req.body.amount);
+  const famount = Number(req.body.famount);
+  const customerid = Number(req.params.id);
+  const creds = Number(req.body.credits);
+  //const actualcreds=Number(req.body.actualcreds);
+  const mop = req.body.mop;
+  try{
+  let array2=[];
+  let productstockavail=await new Promise((resolve,reject)=>{
+    con.query("Select * from product where p_id in (?)",[productids],async(e,result)=>{
+      if(e) reject(e);
+      else{
+  
+        for(x in result){
+          array2[x]=result[x].stock_avail;
+          if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
+            await new Promise((rs,rj)=>{
+              con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
+                if(er) rj(er);
+                else{
+                  resolve(r);
+                }
+              })
+            })
+          }
+        }
+        resolve(array2)
+       }
+    })
+  })
+ console.log(productstockavail)
+
+    const id = await new Promise((resolve,reject)=>{
+      con.query("insert into transaction(final_amt,billed_amt,mop,emp_id,c_id) values(?)",[[famount,amount,mop,userid,customerid]],(e,result)=>{
+        if(e) reject(e);
+        else{
+          const id = result.insertId;
+          resolve(id);
+        }
+      })
+    })
+    await new Promise((resolve,reject)=>{
+      let array=[];
+      for(x in productids){
+        array[x]=[id,Number(productids[x]),Number(productqtys[x])];
+      }
+      con.query("insert into transaction_prod(t_id,p_id,quantity) values ?",[array],(error,result)=>{
+        if(error) reject(error);
+        else{
+          resolve(result);
+        }
+      })
+    })
+
+    await new Promise(async(resolve,reject)=>{
+      for(x in productids){
+        await new Promise((re,rj)=>{
+          con.query("Update product set stock_avail=? where p_id=?",[Number(productstockavail[x])-Number(productqtys[x]),Number(productids[x])],(e,result)=>{
+            if(e) rj(e);
+            re(1);
+          })
+        })
+      }
+      resolve(1);
+    })
+
+    if(creds!=0){
+      await new Promise((resolve,reject)=>{
+        con.query("select c_pts from customer where c_id=?",[customerid],(error,result)=>{
+          if(error) reject(error);
+          else{
+            con.query("update customer set c_pts=? where c_id= ? ",[result.c_pts-creds,customerid],(err,result2)=>{
+              if(err) reject(err);
+              else{
+                resolve(1);
+              }
+            })
+          }
+        })
+      })
+    }
+    res.redirect("/billing");
+  }catch(e){
+    console.log(e);
+    res.redirect("back");
+  }
+  
+
+});
+
+
+///////////////////////////////////////////////////////////////////inventory routes
 
 
 // app.post("/register",(req,res)=>{
@@ -914,6 +1094,76 @@ app.post("/billing/newbill",(req,res)=>{
 //     });
 //   });
 // });
+
+//////////////get routes
+app.get("/inventory",inventoryAuth,(req,res)=>{
+  con.query("select * from product where status='low'",(e,products)=>{
+    if(e) console.log(e);
+    else{
+      res.render("inventoryindex",{products});
+    }
+
+  })
+})
+
+
+/////post routes
+
+app.post("/inventory",inventoryAuth,async (req,res)=>{
+ try{
+   console.log("hell")
+  await new Promise((resolve,reject)=>{
+    con.query("INSERT into orders(p_id,emp_id,qty) values(?)",[[Number(Object.keys(req.body)[0]),req.session.user.empid,Number(Object.values(req.body)[0])]],
+    (e,result)=>{
+      if(e) reject(e);
+      else{
+        resolve(result);
+      }
+    })
+  })
+  console.log("hell")
+  await new Promise((resolve,reject)=>{
+    con.query("select stock_avail from product where p_id=?",[Number(Object.keys(req.body)[0])],
+    (e,result)=>{
+      if(e) reject(e);
+      else{
+        con.query("update product set status='ordered',stock_avail=? where p_id=?",[Number(result[0].stock_avail)+Number(Object.values(req.body)[0]),Number(Object.keys(req.body)[0])],
+    (ee,result3)=>{
+      if(ee) reject(ee);
+      else{
+        resolve(result3);
+      }
+    });
+      }
+    })
+  });
+    
+  console.log("hell")
+  await new Promise((resolve,reject)=>{
+    con.query("select su_email,p_name from supplier natural join product where p_id=?",[Number(Object.keys(req.body)[0])],
+    async (e,result)=>{
+      if(e) reject(e);
+      else{
+        await serverClient.sendEmail({
+          To:result[0].su_email,
+          From:process.env.FROM_EMAIL,
+          Subject:"ORDER FOR PRODUCT",
+          HtmlBody:`<h5>Please deliver the product: ${result[0].p_name} of quantity : ${Object.values(req.body)[0]} as soon as possible! </h5>`
+        });
+        resolve(1)
+      }
+    })
+  })
+ }catch(e){
+   console.log(e);
+   res.redirect("back");
+ }
+ console.log("hell")
+  res.redirect("/inventory");
+
+})
+
+
 
 
 //////////////////////////////////////////////////////supplier routes
@@ -932,7 +1182,7 @@ app.get("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
       [Number(req.params.id)],(e,tender)=>{
         if(e) console.log(e);
         else{
-          console.log(tender)
+        //  console.log(tender)
          if(tender[0].t_status=="open"){
           res.render("supparticipate",{tender});
          }
@@ -955,7 +1205,7 @@ app.get("/supplier/tenders/:id/details",supplierAuth,(req,res)=>{
         (error,responses)=>{
             if(error) console.log(error);
             else{
-                console.log(responses)
+                //console.log(responses)
                 res.render("suptender",{responses});
             }
         })
@@ -969,7 +1219,7 @@ app.get("/supplier/tenders/:id/results",supplierAuth,(req,res)=>{
      con.query("Select * from t_supplier where su_id=?",[req.session.user.sid],(error,check)=>{
       if(error) console.log(error);
       else{
-        console.log(check)
+        //console.log(check)
         res.render("suptresults",{sid:req.session.user.sid,product,check});
       }
 
@@ -988,7 +1238,7 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
   for(x in keys){
     array[x]=[Number(req.params.id),su_id,Number(keys[x].substring(1)),Number(values[x])];
   }
-  console.log(array);
+ // console.log(array);
   con.query("insert into t_supplier(t_id,su_id) values(?)",[[Number(req.params.id),su_id]],(error,result)=>{
     if(error) console.log(error)
     else{
@@ -1010,7 +1260,6 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
 
 
 
-///////////////////////////////////////////////////////inventory routes
 
 
 
@@ -1036,6 +1285,10 @@ app.post("/supplier/tenders/:id/participate",supplierAuth,(req,res)=>{
 
   function billingAuth(req,res,next){
     if(req.session.user !=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin" || req.session.user.role=="billing" )) next();
+    else res.redirect("/login")
+  }
+  function inventoryAuth(req,res,next){
+    if(req.session.user !=undefined && (req.session.user.role=="managing" || req.session.user.role=="admin" || req.session.user.role=="inventory" )) next();
     else res.redirect("/login")
   }
 ////add already authenticated route to not give access to login or register for the user already registered or loggedin

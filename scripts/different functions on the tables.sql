@@ -7,7 +7,31 @@ select * from supplier;
 select * from suplogin;
 select * from product;
 select * from tenders;
+select * from customer;
+select * from transaction;
+select * from transaction_prod;
 
+alter table customer
+add c_otp int not null;
+
+update product set stock_avail=1;
+
+alter table product
+add status varchar(7) not null;
+update product set status='ok';
+
+ALTER TABLE product
+ADD CHECK (status='ok' or status='low' or status='ordered');
+
+
+alter table customer
+drop column status;
+
+delete from customer where c_id=13;
+
+update product set status='low' ;
+update product set pc_perunit=5 ;
+update customer set c_pts=50.60 where c_id=14;
 update tenders set t_closetime='2020-10-29 19:13:00' where t_id=1;
 select * from t_products;
 select * from t_supplier;
