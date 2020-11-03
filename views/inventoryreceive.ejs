@@ -6,9 +6,10 @@
   </button>
   <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
     <div class="navbar-nav">
-      <a class="nav-link active" href="/inventory">Home <span class="sr-only">(current)</span></a>
-      <a class="nav-link" href="/inventory/receive">Receive Orders</a>
+      <a class="nav-link" href="/inventory">Home <span class="sr-only">(current)</span></a>
+      <a class="nav-link  active" href="/inventory/receive">Receive Orders</a>
       <a class="nav-link" href="/inventory/location">Location Of Products</a>
+      <a class="nav-link" href="/inventory/location/modify">Modify location of products</a>
       <!-- <a class="nav-link" href="/admin/transactions">Transactions</a> -->
     </div>
     <div class="navbar-nav">
@@ -18,7 +19,7 @@
 </nav>
 
 <div class="container my-5">
-    <h2 class="text-center my-5"> PRODUCTS WITH LOW QUANTITY</h2>
+    <h2 class="text-center my-5"> PRODUCTS RECEIVED</h2>
     <%if(products.length==0){%>
         <h5 class="text-center my-5">NO PRODUCTS!!!</h5>
     <%}else{%>
@@ -33,7 +34,7 @@
                <h6>MIN. QTY.</h6>
            </div>
            <div class="col-md-4">
-               <h6>QTY. ORDER</h6>
+               <h6>QTY. ORDERED</h6>
            </div>
            <div class="col-md-2">
               
@@ -41,7 +42,7 @@
         </div>
         <hr>
         <% for(x in products){%>
-            <form action="/inventory" method="post">
+            <form action="/inventory/receive" method="post">
                 <div class="row">
                     <div class="col-md-3">
                         <h4><%=products[x].p_name%></h4>
@@ -53,19 +54,19 @@
                        <h4><%=products[x].min_qty%></h4>
                    </div>
                    <div class="col-md-4">
-                       <input type="number" min="<%=products[x].min_qty%>" name="<%=products[x].p_id%>">
+                       <input type="number" name="<%=products[x].p_id%>" value="<%=obj[products[x].p_id]%>">
                    </div>
                    <div class="col-md-2">
-                       <button class="btn btn-outline-success">ORDER</button>
+                       <button class="btn btn-outline-success ls">RECEIVED</button>
                    </div>
                 </div>
-               </form> 
+               </form>
             <%}%>
     <%}%>
-    
-   
 </div>
 
+<script>
 
+</script>
 
 <%-include("partials/footer.ejs")%>

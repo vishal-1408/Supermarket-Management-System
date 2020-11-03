@@ -1106,12 +1106,55 @@ app.get("/inventory",inventoryAuth,(req,res)=>{
   })
 })
 
+app.get("/inventory/receive",inventoryAuth,(req,res)=>{
+  con.query("select * from product where status='ordered'",(e,products)=>{
+    if(e) console.log(e);
+    else{
+      let obj={};
+      let pids =[];
+      for(x in products){
+        pids[x]=products[x].p_id;
+      }
+     if(pids.length==0){
+       return res.render("inventoryreceive",{products:[]})
+     }
+      con.query("Select qty from orders where p_id in (?)",[pids],(er,qty)=>{
+        if(er) console.log(er);
+        else{
+          for(x in qty){
+            obj[pids[x]]=qty[x].qty;
+          }
+          res.render("inventoryreceive",{products,obj});
+        }
+      })
+      
+    }
+
+  })
+})
+
+
+app.get("/inventory/location",(req,res)=>{
+  con.query("Select * from product where p_id not in (select p_id from location)",(e,products)=>{
+    if(e) console.log(e);
+    else{
+      con.query("Select * from product natural join location",(er,plocation)=>{
+        if(er) console.log(er);
+        else{
+          res.render("locationindex",{products,plocation});
+
+        }
+    });
+    }
+  });
+});
+
+
 
 /////post routes
 
 app.post("/inventory",inventoryAuth,async (req,res)=>{
  try{
-   console.log("hell")
   await new Promise((resolve,reject)=>{
     con.query("INSERT into orders(p_id,emp_id,qty) values(?)",[[Number(Object.keys(req.body)[0]),req.session.user.empid,Number(Object.values(req.body)[0])]],
     (e,result)=>{
@@ -1121,24 +1164,18 @@ app.post("/inventory",inventoryAuth,async (req,res)=>{
       }
     })
   })
-  console.log("hell")
+
   await new Promise((resolve,reject)=>{
-    con.query("select stock_avail from product where p_id=?",[Number(Object.keys(req.body)[0])],
-    (e,result)=>{
-      if(e) reject(e);
-      else{
-        con.query("update product set status='ordered',stock_avail=? where p_id=?",[Number(result[0].stock_avail)+Number(Object.values(req.body)[0]),Number(Object.keys(req.body)[0])],
-    (ee,result3)=>{
+        con.query("update product set status='ordered' where p_id=?",[Number(Object.keys(req.body)[0])],
+        (ee,result)=>{
       if(ee) reject(ee);
       else{
-        resolve(result3);
+        resolve(result);
       }
     });
-      }
-    })
-  });
+      });
+
     
-  console.log("hell")
   await new Promise((resolve,reject)=>{
     con.query("select su_email,p_name from supplier natural join product where p_id=?",[Number(Object.keys(req.body)[0])],
     async (e,result)=>{
@@ -1158,12 +1195,87 @@ app.post("/inventory",inventoryAuth,async (req,res)=>{
    console.log(e);
    res.redirect("back");
  }
- console.log("hell")
   res.redirect("/inventory");
 
 })
 
 
+app.post("/inventory/receive",async (req,res)=>{
+  console.log(req.body);
+  try{
+    await new Promise((resolve,reject)=>{
+      con.query("select stock_avail from product where p_id=?",[Number(Object.keys(req.body)[0])],
+      (e,result)=>{
+        if(e) reject(e);
+        else{
+          con.query("update product set status='ok',stock_avail=? where p_id=?",[Number(result[0].stock_avail)+Number(Object.values(req.body)[0]),Number(Object.keys(req.body)[0])],
+         (ee,result3)=>{
+        if(ee) reject(ee);
+        else{
+          resolve(result3);
+        }
+      });
+        }
+      })
+    });
+
+    await new Promise((resolve,reject)=>{
+      const a = new Date();
+      let b,c;
+      if(a.getDate()<10) b="0"+a.getDate();
+      else b=a.getDate();
+      if(a.getMonth()<10) c="0"+a.getMonth();
+      else c=a.getMonth();
+      con.query("update orders set date_received=? where p_id=?",[a.getFullYear()+"-"+c+"-"+b+" "+a.getHours()+":"+a.getMinutes()+":"+a.getSeconds(),
+        Number(Object.keys(req.body)[0])],
+      (e,result)=>{
+        if(e) reject(e);
+        else{
+          resolve(result);
+        }
+      })
+    })
+    res.redirect("/inventory");
+  }catch(e){
+    console.log(e);
+    res.redirect("/inventory/receive");
+  }
+  
+})
+
+
+app.post("/inventory/location",(req,res)=>{
+  console.log(req.body)
+  const row = Number(Object.values(req.body)[1])
+  const floor = Number(Object.values(req.body)[0])
+  const column = Number(Object.values(req.body)[2])
+  const rackno = Number(Object.values(req.body)[3])
+  const pid = Number(Object.keys(req.body)[0].substring(1));
+  console.log(floor,row,column,rackno,pid);
+  con.query("insert into location(p_id,p_column,p_row,p_floor,p_rackno) values(?)",[[pid,column,row,floor,rackno]],(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/inventory/location");
+    }
+  })
+})
+
+
+app.patch("/inventory/location",(req,res)=>{
+  console.log(req.body)
+  const row = Number(Object.values(req.body)[1])
+  const floor = Number(Object.values(req.body)[0])
+  const column = Number(Object.values(req.body)[2])
+  const rackno = Number(Object.values(req.body)[3])
+  const pid = Number(Object.keys(req.body)[0].substring(1));
+  console.log(floor,row,column,rackno,pid);
+  con.query("update location set p_column=?,p_row=?,p_floor=?,p_rackno=? where p_id=?",[column,row,floor,rackno,pid],(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.redirect("/inventory/location");
+    }
+  })
+})
 
 
 //////////////////////////////////////////////////////supplier routes
