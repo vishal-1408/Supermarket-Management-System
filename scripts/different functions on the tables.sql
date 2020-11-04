@@ -9,7 +9,9 @@ select * from product;
 select * from tenders;
 select * from customer;
 select * from transaction;
+select * from location;
 select * from transaction_prod;
+select * from orders;
 
 alter table customer
 add c_otp int not null;
@@ -19,7 +21,7 @@ update product set stock_avail=1;
 alter table product
 add status varchar(7) not null;
 update product set status='ok';
-
+update supplier set su_email='abdefgh@kaloory.com';
 ALTER TABLE product
 ADD CHECK (status='ok' or status='low' or status='ordered');
 
@@ -28,7 +30,7 @@ alter table customer
 drop column status;
 
 delete from customer where c_id=13;
-
+update product set stock_avail=1 ;
 update product set status='low' ;
 update product set pc_perunit=5 ;
 update customer set c_pts=50.60 where c_id=14;

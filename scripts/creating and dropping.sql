@@ -116,7 +116,7 @@ foreign key (p_id) references product(p_id) on delete cascade
 create table orders(
 emp_id int,
 p_id int not null,
-date_received timestamp not null,
+date_received timestamp ,
 date_ordered timestamp not null default now(),
 qty int not null,
 foreign key (emp_id) references employee(emp_id),

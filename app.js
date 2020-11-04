@@ -199,6 +199,47 @@ app.get("/admin/empdetails/:id/addcreds",adminAuth,(req,res)=>{
   })
 });
 
+app.get("/admin/transactions",(req,res)=>{
+  con.query("select * from transaction natural join customer",(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("transactions",{result});
+    }
+  })
+})
+
+
+
+app.get("/admin/transactions/:id",(req,res)=>{
+  con.query("select * from transaction_prod natural join product where t_id=?",[Number(req.params.id)],(e,result)=>{
+    if(e) console.log(e);
+    else{
+      res.render("tproducts",{result});
+    }
+  })
+})
+
+app.get("/admin/customer",(req,res)=>{
+  con.query("select * from customer",(e,result)=>{
+    if(e) console.log(e);
+    else{
+      console.log(result)
+      res.render("customers",{result});
+    }
+  })
+})
+
+// app.get("/admin/supplier",(req,res)=>{
+//   con.query("Select * from supplier",(err,results)=>{
+//     if(err){
+//       console.log(err);
+//       res.redirect("/manager");
+//     }else{
+//       res.render("supdetailsa",{suppliers:results});
+//     }
+//   })
+// })
+
 
 
 
@@ -417,12 +458,13 @@ app.get("/manager/supdetails/:id/modify",managerAuth,(req,res)=>{
 
 
 app.get("/manager/opentender",(req,res)=>{
-  con.query("select p_id,p_name from product where su_id IS NULL",(err,result)=>{
+  con.query("select p_id,p_name from product",(err,result)=>{
     if(err) console.log(err);
     else{
       con.query("select count(su_id) as count from supplier",(e,count)=>{
         if(e) console.log(e);
         else{
+          console.log(result);
           res.render("opentender",{products:result,count:count.count})
         }
       })
@@ -449,7 +491,13 @@ app.get("/manager/tender/:id/details",(req,res)=>{
       con.query("Select * from supplier left join t_supplier on supplier.su_id=t_supplier.su_id where t_id=?",[Number(req.params.id)],(error,suppliers)=>{
         if(error) console.log(error);
         else{
-          res.render("managertender",{tender,suppliers});
+          con.query("Select * from supplier where su_id not in(select su_id from t_supplier)",[Number(req.params.id)],(errr,suppliers2)=>{
+            if(errr) console.log(error);
+            else{
+              res.render("managertender",{tender,suppliers,suppliers2});
+            }
+          })
+
         }
       })
 
@@ -571,8 +619,8 @@ app.post("/manager/addsup/single",managerAuth,(req,res)=>{
 })
 
 app.post("/manager/addproducts",managerAuth,(req,res)=>{
-    con.query("insert into product(p_name,p_mrp,min_qty) values(?)",
-    [[req.body.name,Number(req.body.mrp),Number(req.body.qty)]],(err,results)=>{
+    con.query("insert into product(p_name,p_mrp,min_qty,status) values(?)",
+    [[req.body.name,Number(req.body.mrp),Number(req.body.qty),'low']],(err,results)=>{
       if(err) {
         console.log(err);
         res.redirect("/manager/addproducts");
@@ -651,6 +699,7 @@ app.post("/manager/opentender",(req,res)=>{
                   await serverClient.sendEmail({
                     From:process.env.FROM_EMAIL,
                     To:suppliers[x].su_email,
+                    Subject:"Opened a tender",
                     Body:"A tender has been opened",
                     HtmlBody:`Hi! ${suppliers[x].su_name}, we have opened a tender.
                     It will start at ${req.body.sd+" "+req.body.st} and will end at ${req.body.ed+" "+req.body.et}`
@@ -909,29 +958,30 @@ app.post("/billing/newbill",billingAuth ,async (req,res)=>{
  const famount = Number(req.body.famount);
  const mop = req.body.mop;
  
+ 
  try{
 let array2=[];
- let productstockavail=await new Promise((resolve,reject)=>{
-  con.query("Select * from product where p_id in(?)",[productids],async(e,result)=>{
-    if(e) reject(e);
-    else{
-      for(x in result){
-        array2[x]=result[x].stock_avail;
-        if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
-          await new Promise((rs,rj)=>{
-            con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
-              if(er) rj(er);
-              else{
-                resolve(r);
-              }
-            })
-          })
-        }
-      }
-      resolve(array2);
-     }
-  })
-})
+//  let productstockavail=await new Promise((resolve,reject)=>{
+//   con.query("Select * from product where p_id in(?)",[productids],async(e,result)=>{
+//     if(e) reject(e);
+//     else{
+//       for(x in result){
+//         array2[x]=result[x].stock_avail;
+//         if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
+//           await new Promise((rs,rj)=>{
+//             con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
+//               if(er) rj(er);
+//               else{
+//                 resolve(r);
+//               }
+//             })
+//           })
+//         }
+//       }
+//       resolve(array2);
+//      }
+//   })
+// })
 
     const id = await new Promise((resolve,reject)=>{
       con.query("insert into transaction(final_amt,billed_amt,mop,emp_id) values(?)",[[famount,amount,mop,userid]],(e,result)=>{
@@ -959,7 +1009,7 @@ let array2=[];
     await new Promise(async (resolve,reject)=>{
       for(x in productids){
         await new Promise((re,rj)=>{
-          con.query("Update product set stock_avail=? where p_id=?",[Number(productstockavail[x])-Number(productqtys[x]),Number(productids[x])],(e,result)=>{
+          con.query(`Update product set stock_avail=stock_avail-${Number(productqtys[x])} where p_id=?`,[Number(productids[x])],(e,result)=>{
             if(e) rj(e);
             re(1);
           })
@@ -993,31 +1043,32 @@ app.post("/billing/newbill/:id",billingAuth ,async (req,res)=>{
   const creds = Number(req.body.credits);
   //const actualcreds=Number(req.body.actualcreds);
   const mop = req.body.mop;
+  const points = (amount*5)/100;
   try{
-  let array2=[];
-  let productstockavail=await new Promise((resolve,reject)=>{
-    con.query("Select * from product where p_id in (?)",[productids],async(e,result)=>{
-      if(e) reject(e);
-      else{
+//   let array2=[];
+//   let productstockavail=await new Promise((resolve,reject)=>{
+//     con.query("Select * from product where p_id in (?)",[productids],async(e,result)=>{
+//       if(e) reject(e);
+//       else{
   
-        for(x in result){
-          array2[x]=result[x].stock_avail;
-          if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
-            await new Promise((rs,rj)=>{
-              con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
-                if(er) rj(er);
-                else{
-                  resolve(r);
-                }
-              })
-            })
-          }
-        }
-        resolve(array2)
-       }
-    })
-  })
- console.log(productstockavail)
+//         for(x in result){
+//           array2[x]=result[x].stock_avail;
+//           if(result[x].stock_avail<=result[x].min_qty && result[x].status=='ok'){
+//             await new Promise((rs,rj)=>{
+//               con.query("Update product set status='low' where p_id=? ",[result[x].p_id],(er,r)=>{
+//                 if(er) rj(er);
+//                 else{
+//                   resolve(r);
+//                 }
+//               })
+//             })
+//           }
+//         }
+//         resolve(array2)
+//        }
+//     })
+//   })
+//  console.log(productstockavail)
 
     const id = await new Promise((resolve,reject)=>{
       con.query("insert into transaction(final_amt,billed_amt,mop,emp_id,c_id) values(?)",[[famount,amount,mop,userid,customerid]],(e,result)=>{
@@ -1041,10 +1092,10 @@ app.post("/billing/newbill/:id",billingAuth ,async (req,res)=>{
       })
     })
 
-    await new Promise(async(resolve,reject)=>{
+    await new Promise(async (resolve,reject)=>{
       for(x in productids){
         await new Promise((re,rj)=>{
-          con.query("Update product set stock_avail=? where p_id=?",[Number(productstockavail[x])-Number(productqtys[x]),Number(productids[x])],(e,result)=>{
+          con.query(`Update product set stock_avail=stock_avail-${Number(productqtys[x])} where p_id=?`,[Number(productids[x])],(e,result)=>{
             if(e) rj(e);
             re(1);
           })
@@ -1053,21 +1104,14 @@ app.post("/billing/newbill/:id",billingAuth ,async (req,res)=>{
       resolve(1);
     })
 
-    if(creds!=0){
       await new Promise((resolve,reject)=>{
-        con.query("select c_pts from customer where c_id=?",[customerid],(error,result)=>{
-          if(error) reject(error);
-          else{
-            con.query("update customer set c_pts=? where c_id= ? ",[result.c_pts-creds,customerid],(err,result2)=>{
+            con.query("update customer set c_pts=c_pts+? where c_id= ? ",[points-creds,customerid],(err,result2)=>{
               if(err) reject(err);
               else{
                 resolve(1);
               }
             })
-          }
-        })
-      })
-    }
+          })
     res.redirect("/billing");
   }catch(e){
     console.log(e);
@@ -1118,12 +1162,13 @@ app.get("/inventory/receive",inventoryAuth,(req,res)=>{
      if(pids.length==0){
        return res.render("inventoryreceive",{products:[]})
      }
-      con.query("Select qty from orders where p_id in (?)",[pids],(er,qty)=>{
+      con.query("Select qty from orders where p_id in (?) and date_received IS NULL",[pids],(er,qty)=>{
         if(er) console.log(er);
         else{
           for(x in qty){
             obj[pids[x]]=qty[x].qty;
           }
+          console.log(obj)
           res.render("inventoryreceive",{products,obj});
         }
       })
@@ -1155,6 +1200,7 @@ app.get("/inventory/location",(req,res)=>{
 
 app.post("/inventory",inventoryAuth,async (req,res)=>{
  try{
+   console.log(Number(Object.values(req.body)[0]))
   await new Promise((resolve,reject)=>{
     con.query("INSERT into orders(p_id,emp_id,qty) values(?)",[[Number(Object.keys(req.body)[0]),req.session.user.empid,Number(Object.values(req.body)[0])]],
     (e,result)=>{
@@ -1181,6 +1227,7 @@ app.post("/inventory",inventoryAuth,async (req,res)=>{
     async (e,result)=>{
       if(e) reject(e);
       else{
+        console.log(result)
         await serverClient.sendEmail({
           To:result[0].su_email,
           From:process.env.FROM_EMAIL,
@@ -1204,20 +1251,14 @@ app.post("/inventory/receive",async (req,res)=>{
   console.log(req.body);
   try{
     await new Promise((resolve,reject)=>{
-      con.query("select stock_avail from product where p_id=?",[Number(Object.keys(req.body)[0])],
-      (e,result)=>{
-        if(e) reject(e);
-        else{
-          con.query("update product set status='ok',stock_avail=? where p_id=?",[Number(result[0].stock_avail)+Number(Object.values(req.body)[0]),Number(Object.keys(req.body)[0])],
+          con.query(`update product set status='ok',stock_avail=stock_avail+${Number(Object.values(req.body)[0])} where p_id=?`,[Number(Object.keys(req.body)[0])],
          (ee,result3)=>{
         if(ee) reject(ee);
         else{
           resolve(result3);
         }
       });
-        }
-      })
-    });
+        });
 
     await new Promise((resolve,reject)=>{
       const a = new Date();
@@ -1235,7 +1276,7 @@ app.post("/inventory/receive",async (req,res)=>{
         }
       })
     })
-    res.redirect("/inventory");
+    res.redirect("/inventory/receive");
   }catch(e){
     console.log(e);
     res.redirect("/inventory/receive");
