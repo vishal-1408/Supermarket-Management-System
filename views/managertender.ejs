@@ -10,7 +10,7 @@
         <a class="nav-link" href="/manager/addproducts">Add Products</a>
         <a class="nav-link" href="/manager/supdetails">Supplier Details</a>
         <a class="nav-link" href="/manager/proddetails">Product Details</a>
-        <a class="nav-link" href="/manager/payments">Payments</a>
+        <!-- <a class="nav-link" href="/manager/payments">Payments</a> -->
         <a class="nav-link active" href="/manager/opentender">Open Tender</a>
         <a class="nav-link" href="/manager/tender/details">Tender Details</a>
       </div>
@@ -121,14 +121,14 @@
           </div> -->
       </div>
       <%i=0;%>
-      <%for(x in suppliers){%>
-        <%if(!suppliers[x].t_id){%>
+      <%for(x in suppliers2){%>
+        <%if(!suppliers2[x].t_id){%>
             <div class="row">
                 <div class="col-md-6">
                     <h3><%=i+1%><%i+=1;%></h3>
                 </div>
                   <div class="col-md-6">
-                      <h3><%=suppliers[x].su_name%></h3>
+                      <h3><%=suppliers2[x].su_name%></h3>
                   </div>
               </div>
         <%}%>

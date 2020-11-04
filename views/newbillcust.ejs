@@ -249,8 +249,8 @@ add.on("click",(e)=>{
         }
     }
     createItem(product,quantity.val());
-    amount.val(Number(amount.val())+Number((product.pc_perunit*quantity.val()))); //adding to amount!!!
-    famount.val(Number(famount.val())+Number((product.pc_perunit*quantity.val())));
+    amount.val(Number(amount.val())+Number((product.p_mrp*quantity.val()))); //adding to amount!!!
+    famount.val(Number(famount.val())+Number((product.p_mrp*quantity.val())));
     quantity.val("");
     }
  
@@ -268,7 +268,8 @@ function createRow(p){
  return div;
 }
 
-function createItem(p,q){ 
+function createItem(p,q){
+    console.log("NICE",p)
     let children = main.children()
     let qty;
    for(let x=1;x<=children.prevObject[0].childNodes.length-1;x++){
@@ -293,10 +294,10 @@ function createItem(p,q){
    <div class="col-md-2">
     <input type="number" name="q[${p.p_id}]" class="quants" max="${p.stock_avail}" value="${q}" data="${p.p_id}"style="width:100%;">
     </div>
-   <div class="col-md-2">${p.pc_perunit}</div>
-   <div class="col-md-1">${p.pc_perunit*q}</div>
+   <div class="col-md-2">${p.p_mrp}</div>
+   <div class="col-md-1">${p.p_mrp*q}</div>
    <div class="col-md-1">
-    <button class="btn btn-outline-danger delete" data-total="${p.pc_perunit*q}" data="${q}">DELETE</button>
+    <button class="btn btn-outline-danger delete" data-total="${p.p_mrp*q}" data="${q}">DELETE</button>
     </div>
 
    `
