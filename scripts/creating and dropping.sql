@@ -69,6 +69,8 @@ create table product(
  stock_avail int not null default 0,
  su_id int,
  pc_perunit float,
+ status varchar(7) not null default "low",
+ check(status="ok" or status='low' or status='ordered'),
  foreign key (su_id) references supplier(su_id)
  
 );
@@ -83,7 +85,8 @@ date_visited timestamp not null default now(),
 c_address varchar(100) not null,
 c_mobileno bigint not null unique,
 c_age int not null,
-c_pts float not null default 0.00
+c_pts float not null default 0.00,
+c_otp int
 );
 
 -- drop table customer;

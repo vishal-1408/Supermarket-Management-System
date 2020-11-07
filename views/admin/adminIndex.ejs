@@ -1,0 +1,119 @@
+<%-include("../partials/header.ejs")%>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-link active" href="/admin">Home <span class="sr-only">(current)</span></a>
+      <a class="nav-link" href="/admin/transactions">Transactions</a>
+      <!-- <a class="nav-link" href="/admin/purchaseorder">Purchase  Details</a> -->
+      <a class="nav-link" href="/admin/empdetails">Employee Details</a>
+      <!-- <a class="nav-link" href="/admin/stats">Statistics</a> -->
+      <a class="nav-link" href="/manager/supdetails">Supplier Details</a>
+      <a class="nav-link" href="/admin/customer">Customer Details</a>
+      <a class="nav-link" href="/manager/proddetails">Product Details</a>
+    </div>
+    <div class="navbar-nav">
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+
+
+<div class="container">
+  <h1 class="text-center my-4">ADD EMPLOYEE</h1>
+  <hr>
+  <form action="/admin/addemp/single" method="post">
+  <div class="container">
+    <div class="row">
+      <div class="form-group col-md-6">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" id="name" name="name">
+        </div>
+        <div class="form-group col-md-6">
+      <label for="mobileno">MobileNo</label>
+      <input type="text" class="form-control" id="mobileno" name="mobileno">
+    </div>
+    </div>
+    <div class="row">
+      <div class="form-group col-md-6">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="gender">Gender</label>
+          </div>
+          <select class="custom-select" id="gender" name="gender">
+            <option selected>Choose...</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+            <option value="N">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group col-md-6">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="department">Department</label>
+          </div>
+          <select class="custom-select" id="department" name="dept">
+            <option selected>Choose...</option>
+            <!-- <option value="admin">Admin</option> -->
+            <option value="billing">Billing</option>
+            <option value="inventory">Inventory</option>
+            <option value="managing">Managing</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="helper">Helper</option>
+            <option value="security">Security</option>
+          </select>
+        </div>
+      
+    </div>
+    </div>
+    <div class="row">
+      <div class="form-group col-md-6">
+        <label for="age">Age</label>
+        <input type="number" class="form-control" id="age" name="age">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="age">Salary</label>
+        <input type="number" class="form-control" id="salary" name="salary" >
+      </div>
+    </div>
+  <div class="row">
+    <div class="form-group col-md-12">
+      <label for="address">address:</label>
+      <input type="text" name="address" id="address" class="form-control" >
+    </div>
+  </div>
+  <div class="text-center">
+    <button class="btn btn-large btn-outline-success">Submit</button>
+  </div>
+
+  </div>
+
+  </form>
+  </div>
+<hr CLASS="my-5">
+<div class="container my-5">
+  <h1 class="my-5 text-center">ADD EMPLOYEES THROUGH EXCEL SHEET</h1>
+<form action="/admin/addemp/multiple" method="post" enctype="multipart/form-data">
+   <div class="form-group">
+     <input type="file" id="file" class="form-control" name="excelfile">
+    <label for="file">File Upload</label>
+  </div>
+  <div class="text-center"><button class="btn btn-outline-danger">Submit</button></div>
+</form>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<%- include("../partials/footer.ejs") %>
