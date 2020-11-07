@@ -1,0 +1,52 @@
+<%-include("../partials/header.ejs")%>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse d-flex justify-content-between" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-link active" href="/admin">Home <span class="sr-only">(current)</span></a>
+      <a class="nav-link" href="/admin/transactions">Transactions</a>
+      <!-- <a class="nav-link" href="/admin/purchaseorder">Purchase  Details</a> -->
+      <a class="nav-link" href="/admin/empdetails">Employee Details</a>
+      <!-- <a class="nav-link" href="/admin/stats">Statistics</a> -->
+      <a class="nav-link" href="/manager/supdetails">Supplier Details</a>
+      <a class="nav-link" href="/admin/customer">Customer Details</a>
+      <a class="nav-link" href="/manager/proddetails">Product Details</a>
+    </div>
+    <div class="navbar-nav">
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid my-5">
+    <h2 class="text-center my-5">CUSTOMERS</h2>
+    <div class="row my-5">
+        <div class="col-md-1"><h5>SL.NO</h5></div>
+        <div class="col-md-2"><h5>NAME</h5></div>
+        <div class="col-md-1"><h5>CREDITS AVAIL.</h5></div>
+        <div class="col-md-1"><h5>GENDER</h5></div>
+        <div class="col-md-2"><h5>MOBILENO.</h5></div>
+        <div class="col-md-1"><h5>AGE</h5></div>
+        <div class="col-md-2"><h5>ADDRESS</h5></div>
+    </div>
+    <%if(result.length!=0){%>
+        <%for(let i=0;i<=result.length-1;i++){%>
+                   <div class="row my-3">
+                       <div class="col-md-1"><%=i+1%>)</div>
+                       <div class="col-md-2"><%=result[i].c_name%></div>
+                       <div class="col-md-1"><%=result[i].c_pts%></div>
+                       <div class="col-md-1"><%=result[i].c_gender%></div>
+                       <div class="col-md-2"><%=result[i].c_mobileno%></div>
+                       <div class="col-md-1"><%=result[i].c_age%></div>
+                       <div class="col-md-2"><%=result[i].c_address%></div>
+                   </div>
+            <%}%>
+    <%}else{%>
+          <h4 class="text-center my-5">NO CUSTOMER YET!!</h4>
+    <%}%>
+</div>
+
+<%- include("../partials/footer.ejs") %>

@@ -9,15 +9,24 @@ select * from product;
 select * from tenders;
 select * from customer;
 select * from transaction;
+
+delete from customer where c_id=17;
+
+
+
+alter table orders
+add check(qty>0);
+delete from orders where qty=0;
 select * from location;
 select * from transaction_prod;
 select * from orders;
 
+delete from orders where emp_id=17;
 alter table customer
 add c_otp int not null;
 
 update product set stock_avail=1;
-
+delete from tb
 alter table product
 add status varchar(7) not null;
 update product set status='ok';
@@ -38,6 +47,7 @@ update tenders set t_closetime='2020-10-29 19:13:00' where t_id=1;
 select * from t_products;
 select * from t_supplier;
 select * from ternary;
+delete from t_supplier where su_id=1;
 select * from ternary group by p_id order by cost desc;
 insert into ternary(t_id,su_id,p_id,cost) values(1,8,1,25);
 delete from ternary where t_id=1;
