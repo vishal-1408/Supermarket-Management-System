@@ -6,6 +6,9 @@
 *  Verification of customers using OTP
 *  Transparent view of all the data collected for the owner 
 *  Employees can be added to the organization by uplaoding an excel sheet of employee details
+*  Suppliers can be selected by managers
 
 # License
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
